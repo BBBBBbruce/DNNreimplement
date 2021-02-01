@@ -1,5 +1,3 @@
-# DNNreimplement
-
 Contains 3 deep neural networks in reverse-rendering from photo graphs. 
 Data sets: Li et al's, Boss et al's, mine.
 
@@ -10,3 +8,7 @@ Data sets: Li et al's, Boss et al's, mine.
 5. Using Boss' data to do Step 1-4
 6. Using my data to do Step 1-4
 7. Summarise the results
+
+Li: http://cseweb.ucsd.edu/~viscomp/projects/SIGA18ShapeSVBRDF/
+Boss: https://github.com/NVlabs/two-shot-brdf-shape
+Deschaintre: https://github.com/valentin-deschaintre/Single-Image-SVBRDF-Capture-rendering-loss
