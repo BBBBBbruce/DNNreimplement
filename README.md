@@ -10,5 +10,7 @@ Data sets: Li et al's, Boss et al's, mine.
 7. Summarise the results
 
 Li: http://cseweb.ucsd.edu/~viscomp/projects/SIGA18ShapeSVBRDF/
+
 Boss: https://github.com/NVlabs/two-shot-brdf-shape
+
 Deschaintre: https://github.com/valentin-deschaintre/Single-Image-SVBRDF-Capture-rendering-loss
