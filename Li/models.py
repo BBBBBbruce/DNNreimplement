@@ -86,20 +86,27 @@ class decoderInitial(nn.Module):
     def forward(self, x1, x2, x3, x4, x5, x):
         x_d1 = F.relu( self.dbn0(self.dconv0(x) ), True)
         x_d1_next = torch.cat( (x_d1, x5), dim = 1)
+
         x_d2 = F.relu( self.dbn1(self.dconv1(x_d1_next) ), True)
         x_d2_next = torch.cat( (x_d2, x4), dim = 1)
+
         x_d3 = F.relu( self.dbn2(self.dconv2(x_d2_next) ), True)
         x_d3_next = torch.cat( (x_d3, x3), dim = 1)
+
         x_d4 = F.relu( self.dbn3(self.dconv3(x_d3_next) ), True)
         x_d4_next = torch.cat( (x_d4, x2), dim = 1)
+
         x_d5 = F.relu( self.dbn4(self.dconv4(x_d4_next) ), True)
         x_d5_next = torch.cat( (x_d5, x1), dim = 1)
+        
         x_d6 = F.relu( self.dbn5(self.dconv5(x_d5_next) ), True)
         x_orig  = torch.tanh( self.convFinal(x_d6) )
+
+
         if self.mode == 0:
             x_out = x_orig
         elif self.mode == 1:
-            norm = torch.sqrt(torch.sum(x_orig * x_orig, dim=1).unsqueeze(1) ).expand_as(x_orig);
+            norm = torch.sqrt(torch.sum(x_orig * x_orig, dim=1).unsqueeze(1) ).expand_as(x_orig)
             x_out = x_orig / norm
         elif self.mode == 2:
             x_out = torch.mean(x_orig, dim=1).unsqueeze(1)
