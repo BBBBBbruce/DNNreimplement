@@ -43,7 +43,6 @@ def fresnelSchlick(cosTheta, F0):
 def process(maps):
     return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
 
-#TRY per pixel
 def reflect(I,N):
     #return 2*np.dot(dir,N)*N - dir
     return I - 2 * np.dot(I, N) * N
@@ -119,6 +118,7 @@ def GGXrenderer(maps):
 '''
 
 def GGX(L, V, N, albedo, metallic, rough):
+    #per pixel
     H = normalisation(V + L)
     VdotH = np.max(np.dot(V,H),0)
     NdotH = np.max(np.dot(N,H),0)
@@ -133,9 +133,9 @@ def GGX(L, V, N, albedo, metallic, rough):
     denominator = 4 * NdotV * NdotL + 0.001
     specular = nominator / denominator
 
-    kS = 0.2
-    kD = 1.0 - kS
-    kD *= 1.0 - metallic
+    #kS = 0.2
+    #kD = 1.0 - kS
+    #kD *= 1.0 - metallic
 
     radiance = 1
     #diffuse = kD * albedo / np.pi * radiance *NdotL
@@ -143,12 +143,9 @@ def GGX(L, V, N, albedo, metallic, rough):
     reflection = specular * radiance * NdotL
     color =  diffuse + np.ones(3)*reflection 
 
-    #color /=  color + np.ones(3) #simple tonemapping
-    return 1 if color.any() > 1 else color
+    return 1 if color.any() > 1 else color#**(1/1.5) 
 
 def GGXrenderer(maps):
-   
-
     #variable needed are defined below:
     #==========================================================
     imgout = np.zeros([288,288,3])
