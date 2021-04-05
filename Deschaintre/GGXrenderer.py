@@ -9,7 +9,10 @@ import matplotlib.pyplot as plt
 
 
 def normalisation(vec):
-    return vec/np.linalg.norm(vec)
+    return vec/np.linalg.norm(vec,axis = -1)[:,:,None]
+
+def normalis(vec):
+        return vec/np.linalg.norm(vec)
 
 def DistributionGGX(N,  H,  roughness):
     a = roughness*roughness
@@ -119,6 +122,59 @@ def GGXrenderer(maps):
     return imgout
 '''
 
+def GGXtf(maps):
+    def GGXpxl(V,L,N,albedo,metallic,rough):
+        albedo   = albedo/255
+        metallic = tf.reduce_mean(metallic,axis = -1)/255# set to single value
+        rough= (rough/255)**2
+
+        H = normalisation(V + L)
+        VdotH = tf.maximum(tf.reduce_sum(V*H,axis = -1),0)
+        NdotH = tf.maximum(tf.reduce_sum(N*H,axis = -1),0)
+        NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1),0)
+        NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1),0)
+
+        F = metallic+ (1 - metallic)* (1 - VdotH)**5
+        NDF = 1 / (np.pi*rough*pow(NdotH,4.0))*tf.exp((NdotH * NdotH - 1.0) / (rough * NdotH * NdotH))
+        G = tf.minimum(1. ,tf.minimum( 2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH))
+
+        nominator    = NDF * G * F 
+        denominator = 4 * NdotV * NdotL + 0.001
+        specular = nominator / denominator
+
+        #radiance = 1
+        #diffuse = kD * albedo / tf.pi * radiance *NdotL
+        diffuse = (1-metallic)[:,:,None] * albedo / np.pi  *NdotL[:,:,None] #*radiance
+        reflection = specular * NdotL #* radiance 
+        reflection = tf.reshape(reflection,(288,288,1))
+        #print(tf.concat([reflection,reflection,reflection],-1).shape)
+        color = tf.concat([reflection,reflection,reflection],-1) + diffuse*2
+        return tf.minimum(1,color)
+
+    lightpos = np.array([144,144,1000])
+    viewpos  = np.array([144,144,144])
+    #assuming original is a square with 288*288, normal is (0,0,1)
+    #normal_global   = np.array([0,0,1]) # depth map
+    #FragPos = x,y ; texcoords = fragpos
+    #F0 = np.array([1,1,1])*0.04
+    albedomap, specularmap, normalinmap, roughnessmap = process(maps)
+
+    x = np.linspace(0,maps.shape[0]-1,maps.shape[0])
+    y = np.linspace(0,maps.shape[1]-1,maps.shape[1])
+    xx,yy = tf.convert_to_tensor(np.meshgrid(x,y))
+    padd0 = np.reshape(np.zeros([maps.shape[0],maps.shape[1]]),(maps.shape[0],maps.shape[1],1))
+    padd1 = np.reshape(np.ones([maps.shape[0],maps.shape[1]])*255,(maps.shape[0],maps.shape[1],1))
+    N = np.append(normalinmap,padd1,axis = -1)/255
+
+    fragpos = np.append(np.stack((xx,yy), axis=-1),padd0,axis = -1)
+
+    V = normalisation(viewpos - fragpos)
+    L = normalisation(lightpos - fragpos)
+    #N = normalisation(N)
+
+    imgout = GGXpxl(V,L, N, albedomap,specularmap,roughnessmap)
+    return  imgout
+
 def GGXperpixel(maps):
     def GGXpxl(x,y,normal,albedo,metallic,rough):
         fragpos = np.array([x,y,0])
@@ -181,7 +237,7 @@ def GGXperpixel(maps):
 
 def GGX(L, V, N, albedo, metallic, rough):
     #per pixel
-    H = normalisation(V + L)
+    H = normalis(V + L)
     VdotH = np.max(np.dot(V,H),0)
     NdotH = np.max(np.dot(N,H),0)
     NdotV = np.max(np.dot(N,V),0)
@@ -208,12 +264,13 @@ def GGX(L, V, N, albedo, metallic, rough):
     return 1 if color.any() > 1 else color#**(1/1.5) 
 
 def GGXrenderer(maps):
+    
     #variable needed are defined below:
     #==========================================================
     imgout = np.zeros([288,288,3])
 
     #Assuming lightpos at (0,0,10) veiwpos at (0,0,5)
-    lightpos = np.array([0,0,1000])
+    lightpos = np.array([144,144,1000])
     viewpos  = np.array([144,144,144])
     #assuming original is a square with 288*288, normal is (0,0,1)
     normal_global   = np.array([0,0,1])
@@ -231,13 +288,13 @@ def GGXrenderer(maps):
             alpha_sq= (roughnessmap[i,j]/255)**2
             normaladded = normalinmap[i,j] 
             normaladded /= 255
-            normal = normal_global + np.append(normaladded,1)
+            N = np.append(normaladded,2)
 
-            N = normalisation(normal)
-            V = normalisation(viewpos - fragpos)
-            L = normalisation(lightpos - fragpos)
+            N = normalis(N)
+            V = normalis(viewpos - fragpos)
+            L = normalis(lightpos - fragpos)
             imgout[i,j] = GGX(L,V,N,albedo, metallic,alpha_sq)
-
+            #imgout[i,j] = L
     return imgout
 
 def Phongrenderer(maps):
@@ -298,9 +355,16 @@ path = os.getcwd()+'\Deschaintre\example.png'
 input, maps = imagestack(path)
 print('start rendering')
 st = time.time()
-out = GGXperpixel(maps)
-#print(out)
+out1 = GGXtf(tf.convert_to_tensor(maps))
+#out2 = GGXrenderer(maps)
 print('finish rendering, using '+str(time.time()-st)+' seconds')
-plt.imshow(out)
+plt.imshow(out1)
 plt.show()
+
+#plt.imshow(out2)
+#plt.show()
+
+
+#plt.imshow(out)
+#plt.show()
 
