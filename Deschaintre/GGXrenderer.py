@@ -8,6 +8,8 @@ from imageprocessing import imagestack
 import matplotlib.pyplot as plt
 
 
+
+
 def normalisation(vec):
     return vec/np.linalg.norm(vec,axis = -1)[:,:,None]
 
@@ -24,22 +26,16 @@ def DistributionGGX(N,  H,  roughness):
     denom = (NdotH2 * (a2 - 1.0) + 1.0)
     denom = np.pi * denom * denom
 
+    
     return nom / denom
 
-def GeometrySchlickGGX(NdotV,  roughness):
-    r = (roughness + 1.0)
-    k = (r*r) / 8.0
-    nom   = NdotV
-    denom = NdotV * (1.0 - k) + k
+def GeometrySchlickGGX(NdotV,  k):
+    return 1.0/tf.maximum((NdotV * (1.0 - k) + k), 0.001)
 
-    return nom / denom
-
-def GeometrySmith(N,  V,  L, roughness):
-    NdotV = np.max(np.dot(N, V),0)
-    NdotL = np.max(np.dot(N, L),0)
-    ggx2 = GeometrySchlickGGX(NdotV, roughness)
-    ggx1 = GeometrySchlickGGX(NdotL, roughness)
-
+def GeometrySmith(NdotV, NdotL, roughness):
+    
+    ggx2 = GeometrySchlickGGX(NdotV, tf.sqrt(roughness))
+    ggx1 = GeometrySchlickGGX(NdotL, tf.sqrt(roughness))
     return ggx1 * ggx2
 
 def fresnelSchlick(cosTheta, F0):
@@ -51,6 +47,7 @@ def process(maps):
 def reflect(I,N):
     #return 2*np.dot(dir,N)*N - dir
     return I - 2 * np.dot(I, N) * N
+
 '''
 def GGXrenderer(maps):
     #using fragment-like shader
@@ -122,37 +119,49 @@ def GGXrenderer(maps):
     return imgout
 '''
 
-def GGXtf(maps):
-    def GGXpxl(V,L,N,albedo,metallic,rough):
+def GGXpxl(V,L,N,albedo,metallic,rough):
+        #print(L)
+        
         albedo   = albedo/255
         metallic = tf.reduce_mean(metallic,axis = -1)/255# set to single value
         rough= (rough/255)**2
 
-        H = normalisation(V + L)
+        #H = normalisation(V + L)
+        H = normalisation(V+L)
+        
         VdotH = tf.maximum(tf.reduce_sum(V*H,axis = -1),0)
-        NdotH = tf.maximum(tf.reduce_sum(N*H,axis = -1),0)
+        NdotH = tf.reduce_sum(N*H,axis = -1)
         NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1),0)
         NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1),0)
+        print(NdotH[0,0],NdotH[287,287],NdotH[0,287],NdotH[287,0])
+        #VdotH = tf.reduce_sum(V*H,axis = -1)
+        #NdotH = tf.reduce_sum(N*H,axis = -1)
+        #NdotV = tf.reduce_sum(V*N,axis = -1)
+        #NdotL = tf.reduce_sum(N*L,axis = -1)
 
-        F = metallic+ (1 - metallic)* (1 - VdotH)**5
+
+        F = metallic+ (1 - metallic) * (1 - VdotH)**5
         NDF = 1 / (np.pi*rough*pow(NdotH,4.0))*tf.exp((NdotH * NdotH - 1.0) / (rough * NdotH * NdotH))
         G = tf.minimum(1. ,tf.minimum( 2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH))
+        #G = GeometrySmith(NdotV, NdotL, rough)
 
-        nominator    = NDF * G * F 
+        nominator    = NDF* G * F 
         denominator = 4 * NdotV * NdotL + 0.001
         specular = nominator / denominator
 
         #radiance = 1
         #diffuse = kD * albedo / tf.pi * radiance *NdotL
-        diffuse = (1-metallic)[:,:,None] * albedo / np.pi  *NdotL[:,:,None] #*radiance
-        reflection = specular * NdotL #* radiance 
+        diffuse = (1-metallic)[:,:,None] * albedo / np.pi *NdotL[:,:,None] #*radiance
+
+        reflection = specular * NdotL*0.2 #* radiance 
         reflection = tf.reshape(reflection,(288,288,1))
         #print(tf.concat([reflection,reflection,reflection],-1).shape)
-        color = tf.concat([reflection,reflection,reflection],-1) + diffuse*2
+        color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1.5
         return tf.minimum(1,color)
 
+def GGXtf(maps):
     lightpos = np.array([144,144,1000])
-    viewpos  = np.array([144,144,144])
+    viewpos  = np.array([143,143,144])
     #assuming original is a square with 288*288, normal is (0,0,1)
     #normal_global   = np.array([0,0,1]) # depth map
     #FragPos = x,y ; texcoords = fragpos
@@ -164,16 +173,17 @@ def GGXtf(maps):
     xx,yy = tf.convert_to_tensor(np.meshgrid(x,y))
     padd0 = np.reshape(np.zeros([maps.shape[0],maps.shape[1]]),(maps.shape[0],maps.shape[1],1))
     padd1 = np.reshape(np.ones([maps.shape[0],maps.shape[1]])*255,(maps.shape[0],maps.shape[1],1))
-    N = np.append(normalinmap,padd1,axis = -1)/255
-
     fragpos = np.append(np.stack((xx,yy), axis=-1),padd0,axis = -1)
 
+    N = np.append(normalinmap,padd1,axis = -1)/255
     V = normalisation(viewpos - fragpos)
     L = normalisation(lightpos - fragpos)
+    #print(L)
     #N = normalisation(N)
+    #print(V[0,0],V[287,287], V[287,0], V[0,287])
+    imgout = GGXpxl(V ,L , N, albedomap,specularmap,roughnessmap)
 
-    imgout = GGXpxl(V,L, N, albedomap,specularmap,roughnessmap)
-    return  imgout
+    return  imgout**(1/1.8)
 
 def GGXperpixel(maps):
     def GGXpxl(x,y,normal,albedo,metallic,rough):
@@ -356,7 +366,9 @@ input, maps = imagestack(path)
 print('start rendering')
 st = time.time()
 out1 = GGXtf(tf.convert_to_tensor(maps))
+
 #out2 = GGXrenderer(maps)
+
 print('finish rendering, using '+str(time.time()-st)+' seconds')
 plt.imshow(out1)
 plt.show()
