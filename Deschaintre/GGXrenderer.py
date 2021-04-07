@@ -154,7 +154,7 @@ def GGXpxl(V,L,N,albedo,metallic,rough):
         #diffuse = kD * albedo / tf.pi * radiance *NdotL
         diffuse = (1-metallic)[:,:,None] * albedo / np.pi *NdotL[:,:,None] #*radiance
 
-        reflection = specular * NdotL*0.2 #* radiance 
+        reflection = specular * NdotL*10 #* radiance 
         reflection = tf.reshape(reflection,(288,288,1))
         #print(tf.concat([reflection,reflection,reflection],-1).shape)
         color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1.5
@@ -182,7 +182,7 @@ def GGXtf(maps):
     fragpos = tf.concat([xx,yy,padd0],axis = -1)
     #fragpos = np.append(np.stack((xx,yy), axis=-1),padd0,axis = -1)
     #N = normalisation(tf.concat([normalinmap,padd1],axis = -1)/255)
-    N = tf.concat([normalinmap,padd1],axis = -1)/255
+    N = normalisation(tf.concat([normalinmap,padd1],axis = -1)/255)
     V = normalisation(viewpos - fragpos)
     L = normalisation(lightpos - fragpos)
     #print(L)
@@ -370,7 +370,8 @@ def Phongrenderer(maps):
 
 
 tf.compat.v1.enable_eager_execution()
-path = os.getcwd()+'\example.png'
+print(os.getcwd())
+path = os.getcwd()+'\Deschaintre\example.png'
 input, maps = imagestack(path)
 print('start rendering')
 st = time.time()
