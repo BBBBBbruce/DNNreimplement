@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 def normalisation(vec):
-    return vec/np.linalg.norm(vec,axis = -1)[:,:,None]
+    return vec/tf.norm(vec,axis = -1)[:,:,None]
 
 def normalis(vec):
         return vec/np.linalg.norm(vec)
@@ -133,7 +133,7 @@ def GGXpxl(V,L,N,albedo,metallic,rough):
         NdotH = tf.reduce_sum(N*H,axis = -1)
         NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1),0)
         NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1),0)
-        print(NdotH[0,0],NdotH[287,287],NdotH[0,287],NdotH[287,0])
+        #print(NdotH[0,0],NdotH[287,287],NdotH[0,287],NdotH[287,0])
         #VdotH = tf.reduce_sum(V*H,axis = -1)
         #NdotH = tf.reduce_sum(N*H,axis = -1)
         #NdotV = tf.reduce_sum(V*N,axis = -1)
@@ -142,7 +142,8 @@ def GGXpxl(V,L,N,albedo,metallic,rough):
 
         F = metallic+ (1 - metallic) * (1 - VdotH)**5
         NDF = 1 / (np.pi*rough*pow(NdotH,4.0))*tf.exp((NdotH * NdotH - 1.0) / (rough * NdotH * NdotH))
-        G = tf.minimum(1. ,tf.minimum( 2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH))
+        G = tf.minimum( 2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH)
+        G = tf.minimum(tf.cast(1,dtype = tf.float64) , G)
         #G = GeometrySmith(NdotV, NdotL, rough)
 
         nominator    = NDF* G * F 
@@ -157,25 +158,31 @@ def GGXpxl(V,L,N,albedo,metallic,rough):
         reflection = tf.reshape(reflection,(288,288,1))
         #print(tf.concat([reflection,reflection,reflection],-1).shape)
         color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1.5
-        return tf.minimum(1,color)
+        return tf.minimum(tf.cast(1,dtype = tf.float64),color)
 
 def GGXtf(maps):
-    lightpos = np.array([144,144,1000])
-    viewpos  = np.array([143,143,144])
+    lightpos = tf.Variable([144,144,1000],dtype = tf.float64)
+    viewpos  = tf.Variable([143,143,144],dtype = tf.float64)
     #assuming original is a square with 288*288, normal is (0,0,1)
     #normal_global   = np.array([0,0,1]) # depth map
     #FragPos = x,y ; texcoords = fragpos
     #F0 = np.array([1,1,1])*0.04
     albedomap, specularmap, normalinmap, roughnessmap = process(maps)
-
-    x = np.linspace(0,maps.shape[0]-1,maps.shape[0])
-    y = np.linspace(0,maps.shape[1]-1,maps.shape[1])
-    xx,yy = tf.convert_to_tensor(np.meshgrid(x,y))
-    padd0 = np.reshape(np.zeros([maps.shape[0],maps.shape[1]]),(maps.shape[0],maps.shape[1],1))
-    padd1 = np.reshape(np.ones([maps.shape[0],maps.shape[1]])*255,(maps.shape[0],maps.shape[1],1))
-    fragpos = np.append(np.stack((xx,yy), axis=-1),padd0,axis = -1)
-
-    N = np.append(normalinmap,padd1,axis = -1)/255
+    
+    shapex = int(maps.shape[0])
+    shapey = int(maps.shape[1])
+    #print(shapex,shapey)
+    x = np.linspace(0,shapex-1,shapex)
+    y = np.linspace(0,shapey-1,shapey)
+    xx,yy = tf.meshgrid(x,y)
+    xx = tf.reshape(xx ,(shapex,shapey,1))
+    yy = tf.reshape(yy ,(shapex,shapey,1))
+    padd0 = tf.reshape(tf.zeros([shapex,shapey],dtype = tf.float64)    ,(shapex,shapey,1))
+    padd1 = tf.reshape(tf.ones ([shapex,shapey],dtype = tf.float64)*255,(shapex,shapey,1))
+    fragpos = tf.concat([xx,yy,padd0],axis = -1)
+    #fragpos = np.append(np.stack((xx,yy), axis=-1),padd0,axis = -1)
+    #N = normalisation(tf.concat([normalinmap,padd1],axis = -1)/255)
+    N = tf.concat([normalinmap,padd1],axis = -1)/255
     V = normalisation(viewpos - fragpos)
     L = normalisation(lightpos - fragpos)
     #print(L)
@@ -183,7 +190,7 @@ def GGXtf(maps):
     #print(V[0,0],V[287,287], V[287,0], V[0,287])
     imgout = GGXpxl(V ,L , N, albedomap,specularmap,roughnessmap)
 
-    return  imgout**(1/1.8)
+    return  imgout
 
 def GGXperpixel(maps):
     def GGXpxl(x,y,normal,albedo,metallic,rough):
@@ -361,13 +368,13 @@ def Phongrenderer(maps):
     
     return imgout
 
-path = os.getcwd()+'\Deschaintre\example.png'
+
+tf.compat.v1.enable_eager_execution()
+path = os.getcwd()+'\example.png'
 input, maps = imagestack(path)
 print('start rendering')
 st = time.time()
 out1 = GGXtf(tf.convert_to_tensor(maps))
-
-#out2 = GGXrenderer(maps)
 
 print('finish rendering, using '+str(time.time()-st)+' seconds')
 plt.imshow(out1)
