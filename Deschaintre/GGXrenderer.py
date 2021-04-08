@@ -130,7 +130,7 @@ def GGXpxl(V,L,N,albedo,metallic,rough):
         H = normalisation(V+L)
         
         VdotH = tf.maximum(tf.reduce_sum(V*H,axis = -1),0)
-        NdotH = tf.reduce_sum(N*H,axis = -1)
+        NdotH = tf.maximum(tf.reduce_sum(N*H,axis = -1),0)
         NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1),0)
         NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1),0)
         #print(NdotH[0,0],NdotH[287,287],NdotH[0,287],NdotH[287,0])
@@ -154,15 +154,15 @@ def GGXpxl(V,L,N,albedo,metallic,rough):
         #diffuse = kD * albedo / tf.pi * radiance *NdotL
         diffuse = (1-metallic)[:,:,None] * albedo / np.pi *NdotL[:,:,None] #*radiance
 
-        reflection = specular * NdotL*10 #* radiance 
+        reflection = specular * NdotL*4 #* radiance 
         reflection = tf.reshape(reflection,(288,288,1))
         #print(tf.concat([reflection,reflection,reflection],-1).shape)
-        color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1.5
+        color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1
         return tf.minimum(tf.cast(1,dtype = tf.float64),color)
 
 def GGXtf(maps):
-    lightpos = tf.Variable([144,144,1000],dtype = tf.float64)
-    viewpos  = tf.Variable([143,143,144],dtype = tf.float64)
+    lightpos = tf.Variable([100,200,200],dtype = tf.float64)
+    viewpos  = tf.Variable([143,143,288],dtype = tf.float64)
     #assuming original is a square with 288*288, normal is (0,0,1)
     #normal_global   = np.array([0,0,1]) # depth map
     #FragPos = x,y ; texcoords = fragpos
@@ -371,7 +371,8 @@ def Phongrenderer(maps):
 
 tf.compat.v1.enable_eager_execution()
 print(os.getcwd())
-path = os.getcwd()+'\Deschaintre\example.png'
+path = os.getcwd()+'\example.png'
+#path = os.getcwd()+'\Deschaintre\example.png'
 input, maps = imagestack(path)
 print('start rendering')
 st = time.time()
