@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 def DataGen(path):
     NN_size = 256
-    batch_size = 128
+    batch_size = 8
 
     tf.compat.v1.enable_eager_execution()
     #path = os.getcwd()+'\Deschaintre\Dataset\Train'

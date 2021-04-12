@@ -6,7 +6,7 @@ import numpy as np
 from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras import layers
 
-from GGXrenderer import GGXperpixel
+from GGXrenderer import GGXtf
 
 def l1_loss(mgt, mif):
     return tf.reduce_mean(tf.abs(mgt-mif))
@@ -16,7 +16,7 @@ def l2_loss(mgt, mif):
 
 def rendering_loss(mgt, mif):
 
-    return l1_loss(GGXperpixel(mgt),GGXperpixel(mif))
+    return l1_loss(GGXtf(mgt),GGXtf(mif))
 
 
 def SVBRDF(num_classes):
@@ -89,6 +89,6 @@ def SVBRDF(num_classes):
     model = keras.Model(inputs, outputs)
     return model
 
-keras.backend.clear_session()
-svbrdf = SVBRDF(9)
-svbrdf.summary()
+#keras.backend.clear_session()
+#svbrdf = SVBRDF(9)
+#svbrdf.summary()

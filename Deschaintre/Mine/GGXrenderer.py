@@ -368,7 +368,7 @@ def Phongrenderer(maps):
     
     return imgout
 
-
+'''
 tf.compat.v1.enable_eager_execution()
 print(os.getcwd())
 path = os.getcwd()+'\example.png'
@@ -381,11 +381,7 @@ out1 = GGXtf(tf.convert_to_tensor(maps))
 print('finish rendering, using '+str(time.time()-st)+' seconds')
 plt.imshow(out1)
 plt.show()
-
-#plt.imshow(out2)
-#plt.show()
+'''
 
 
-#plt.imshow(out)
-#plt.show()
 
