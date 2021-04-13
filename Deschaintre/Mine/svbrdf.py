@@ -90,5 +90,5 @@ def SVBRDF(num_classes):
     return model
 
 #keras.backend.clear_session()
-#svbrdf = SVBRDF(9)
-#svbrdf.summary()
+svbrdf = SVBRDF(9)
+svbrdf.summary()
