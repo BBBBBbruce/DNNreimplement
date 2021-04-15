@@ -1,4 +1,7 @@
 import tensorflow as tf
+from datetime import datetime
+import random
+
 
 NN_size = 256
 batch_size = 8
@@ -24,9 +27,12 @@ def parse_path(path):
 def img_process(raw):
     ins,outs = imagestack_img(raw)
     #outs = tf.cast(outs,tf.float32)
-    inputs = tf.image.random_crop(ins,  [NN_size, NN_size, 3]) 
+    ran_seed = random.seed(datetime.now())
+    tf.random.set_seed(ran_seed)
+    inputs = tf.image.random_crop(ins,  [NN_size, NN_size, 3])
+    tf.random.set_seed(ran_seed) 
     outputs= tf.image.random_crop(outs, [NN_size, NN_size, 9])
-    #TODO fix this
+   
     return inputs, outputs
 
 def tf_im_stack_map(raw):
