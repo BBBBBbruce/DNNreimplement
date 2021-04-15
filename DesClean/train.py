@@ -2,9 +2,10 @@
 import tensorflow as tf
 from svbrdf import SVBRDF
 from DataGen import svbrdf_gen
-from GGXrenderer import rendering_loss
+from GGXrenderer import rendering_loss,l1_loss
 
 #tf.keras.backend.floatx()
+#os.environ['AUTOGRAPH_VERBOSITY'] = 5
 model = SVBRDF(9)
 #model.summary()
 
@@ -14,7 +15,7 @@ print('load_data')
 ds = svbrdf_gen(train_path,8)
 print(ds.element_spec)
 print('finish_loading')
-model.compile(optimizer = 'Adam', loss = rendering_loss, metrics = ['mse'])
-model.fit( ds,verbose =2 , epochs=20)
-model.save('E:\workspace_ms_zhiyuan\DNNreimplement\Deschaintre\Model_saved')
+model.compile(optimizer = 'Adam', loss = l1_loss, metrics = ['mse'])
+model.fit( ds,verbose =5 , epochs=20)
+model.save('E:\workspace_ms_zhiyuan\DNNreimplement\Model_saved')
 

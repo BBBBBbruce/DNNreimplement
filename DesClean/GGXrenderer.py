@@ -2,6 +2,8 @@
 import numpy as np
 import tensorflow as tf
 
+PI = tf.constant(np.pi,dtype = tf.float32)
+
 def l1_loss(mgt, mif):
     return tf.reduce_mean(tf.abs(mgt-mif))
 
@@ -29,13 +31,13 @@ def GGXtf(maps):
         NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1),0)
         NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1),0)
         F = metallic+ (1 - metallic) * (1 - VdotH)**5
-        NDF = 1 / (np.pi*rough*pow(NdotH,4.0))*tf.exp((NdotH * NdotH - 1.0) / (rough * NdotH * NdotH))
+        NDF = 1 / (PI*rough*pow(NdotH,4.0))*tf.exp((NdotH * NdotH - 1.0) / (rough * NdotH * NdotH))
         G = tf.minimum( 2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH)
         G = tf.minimum(tf.cast(1,dtype = tf.float32) , G)
         nominator    = NDF* G * F 
         denominator = 4 * NdotV * NdotL + 0.001
         specular = nominator / denominator
-        diffuse = (1-metallic)[:,:,None] * albedo / np.pi *NdotL[:,:,None] 
+        diffuse = (1-metallic)[:,:,None] * albedo / PI *NdotL[:,:,None] 
 
         reflection = specular * NdotL*4 #* radiance 
         reflection = tf.reshape(reflection,(256,256,1))
