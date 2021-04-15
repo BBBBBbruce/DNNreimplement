@@ -27,9 +27,9 @@ def imagestack_img(img):
     return inputimg, reference
 
 def datagen(path_str):
-    print(path_str)
+    #print(path_str)
     image_string = tf.io.read_file(path_str)
-    raw_input = tf.image.decode_image(image_string,dtype=tf.float64)
+    raw_input = tf.image.decode_image(image_string,dtype=tf.float32)
     ins,outs = imagestack_img(raw_input)
     inputs = tf.image.random_crop(ins,  [NN_size, NN_size, 3])
     outputs= tf.image.random_crop(outs, [NN_size, NN_size, 9])
@@ -37,7 +37,7 @@ def datagen(path_str):
 
 def DataGen(path, bs):
     #load paths
-    dataset = tf.data.Dataset.list_files(path+'/*.png')
+    dataset = tf.data.Dataset.list_files(path+'\*.png')
     '''
     def g(x):
         print(x)
@@ -47,28 +47,57 @@ def DataGen(path, bs):
     print(next(dataset))
     '''
     #map
-    #ds = tf.py_function(func = datagen, inp = [dataset],Tout =(tf.float64,tf.float64) )
+    #ds = tf.py_function(func = datagen, inp = [dataset],Tout =(tf.float32,tf.float32) )
     #ds.set_shape(((256,256,3),(256,256,9)))
-    ds  = dataset.map(lambda x : tf.py_function(func = datagen, inp = [x],Tout =(tf.float64,tf.float64) ))
+    ds  = dataset.map(lambda x : tf.py_function(func = datagen, inp = [x],Tout =(tf.float32,tf.float32) ))
     #split the inputs and outputs
     inflow = ds.map(lambda a, b: a)
     outflow = ds.map(lambda a, b: b)
     #inflow = inflow.set_shape(256,256,3)
-    print('inflow shape: '+str(inflow))
+    #print('inflow shape: '+str(inflow))
     #batch them
     inbatch = inflow.batch(bs)
     outbatch = outflow.batch(bs)
-
-    print(next(inbatch))
+    #print(next(inbatch))
     
     return inbatch, outbatch
 
-print(tf.__version__)
-path = os.getcwd()+'\Deschaintre\Dataset\Train'
 
-ins, outs = DataGen(path,batch_size)
+def parse_path(path):
+    image_string = tf.io.read_file(path)
+    raw_input = tf.cast(tf.image.decode_image(image_string),tf.float32)
+    return raw_input
 
-print(ins,outs)
+def img_process(raw):
+    ins,outs = imagestack_img(raw)
+    inputs = tf.image.random_crop(ins,  [NN_size, NN_size, 3])
+    outputs= tf.image.random_crop(outs, [NN_size, NN_size, 9])
+    return inputs, outputs
+
+def tf_im_stack_map(raw):
+    ins, outs = tf.py_function(func = img_process, inp = [raw],Tout =(tf.float32,tf.float32) )
+    ins.set_shape((256,256,3))
+    outs.set_shape((256,256,9))
+    ins = tf.expand_dims(ins, axis=0)
+    outs = tf.expand_dims(outs, axis=0)
+    return ins,outs
+
+def svbrdf_gen(path, bs):
+    #path = 'E:\workspace_ms_zhiyuan\DNNreimplement\Deschaintre\Dataset\Train'
+    dataset = tf.data.Dataset.list_files(path+'\*.png')
+    image_ds = dataset.map(parse_path)
+    trainset = image_ds.map(tf_im_stack_map)
+    trainset.batch(bs)
+    return trainset
+'''
+trainset = svbrdf_gen(path,8)
+for ins,outs in trainset.take(2):
+    print(ins.shape)
+    print(outs.shape)
+#ins, outs = DataGen(path,batch_size)
+
+#print(ins,outs)
+'''
 '''
 pathList = glob.glob(os.path.join(path +'\*.png'))
 shuffle(pathList)

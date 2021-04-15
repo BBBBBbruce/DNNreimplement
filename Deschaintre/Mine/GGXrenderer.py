@@ -143,7 +143,7 @@ def GGXpxl(V,L,N,albedo,metallic,rough):
         F = metallic+ (1 - metallic) * (1 - VdotH)**5
         NDF = 1 / (np.pi*rough*pow(NdotH,4.0))*tf.exp((NdotH * NdotH - 1.0) / (rough * NdotH * NdotH))
         G = tf.minimum( 2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH)
-        G = tf.minimum(tf.cast(1,dtype = tf.float64) , G)
+        G = tf.minimum(tf.cast(1,dtype = tf.float32) , G)
         #G = GeometrySmith(NdotV, NdotL, rough)
 
         nominator    = NDF* G * F 
@@ -155,14 +155,16 @@ def GGXpxl(V,L,N,albedo,metallic,rough):
         diffuse = (1-metallic)[:,:,None] * albedo / np.pi *NdotL[:,:,None] #*radiance
 
         reflection = specular * NdotL*4 #* radiance 
-        reflection = tf.reshape(reflection,(288,288,1))
+        reflection = tf.reshape(reflection,(256,256,1))
         #print(tf.concat([reflection,reflection,reflection],-1).shape)
         color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1
-        return tf.minimum(tf.cast(1,dtype = tf.float64),color)
+        return tf.minimum(tf.cast(1,dtype = tf.float32),color)
 
 def GGXtf(maps):
-    lightpos = tf.Variable([100,200,200],dtype = tf.float64)
-    viewpos  = tf.Variable([143,143,288],dtype = tf.float64)
+    maps = tf.squeeze(maps)
+    #sprint(maps.shape)
+    lightpos = tf.constant([100,200,200],dtype = tf.float32)
+    viewpos  = tf.constant([143,143,288],dtype = tf.float32)
     #assuming original is a square with 288*288, normal is (0,0,1)
     #normal_global   = np.array([0,0,1]) # depth map
     #FragPos = x,y ; texcoords = fragpos
@@ -175,13 +177,14 @@ def GGXtf(maps):
     x = np.linspace(0,shapex-1,shapex)
     y = np.linspace(0,shapey-1,shapey)
     xx,yy = tf.meshgrid(x,y)
-    xx = tf.reshape(xx ,(shapex,shapey,1))
-    yy = tf.reshape(yy ,(shapex,shapey,1))
-    padd0 = tf.reshape(tf.zeros([shapex,shapey],dtype = tf.float64)    ,(shapex,shapey,1))
-    padd1 = tf.reshape(tf.ones ([shapex,shapey],dtype = tf.float64)*255,(shapex,shapey,1))
+    xx = tf.cast(tf.reshape(xx ,(shapex,shapey,1)),dtype = tf.float32)
+    yy = tf.cast(tf.reshape(yy ,(shapex,shapey,1)),dtype = tf.float32)
+    padd0 = tf.reshape(tf.zeros([shapex,shapey],dtype = tf.float32)    ,(shapex,shapey,1))
+    padd1 = tf.reshape(tf.ones ([shapex,shapey],dtype = tf.float32)*255,(shapex,shapey,1))
     fragpos = tf.concat([xx,yy,padd0],axis = -1)
     #fragpos = np.append(np.stack((xx,yy), axis=-1),padd0,axis = -1)
     #N = normalisation(tf.concat([normalinmap,padd1],axis = -1)/255)
+    #print(normalimap.shape,padd1.shape)
     N = normalisation(tf.concat([normalinmap,padd1],axis = -1)/255)
     V = normalisation(viewpos - fragpos)
     L = normalisation(lightpos - fragpos)

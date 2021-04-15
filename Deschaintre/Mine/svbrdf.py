@@ -1,5 +1,4 @@
 import tensorflow as tf
-from IPython.display import clear_output
 import matplotlib.pyplot as plt
 from tensorflow import keras
 import numpy as np
@@ -24,7 +23,7 @@ def SVBRDF(num_classes):
 
     inputs = keras.Input(shape=(256,256) + (3,))
     x = layers.LeakyReLU()(inputs)
-    GF = layers.AveragePooling2D(x.shape[1])(x)
+    GF = layers.AveragePooling2D((x.shape[1],x.shape[1]))(x)
     GF = layers.Dense(128)(GF)
     GF = layers.Activation('selu')(GF)
     x = layers.SeparableConv2D(128,4, 2, padding="same")(x)
@@ -43,7 +42,7 @@ def SVBRDF(num_classes):
     for filters in downfilters:
         #print(x.shape)
         #print(filters)
-        GFdown = layers.AveragePooling2D(x.shape[1])(x)
+        GFdown = layers.AveragePooling2D((x.shape[1],x.shape[1]))(x)
         GFup   = layers.Dense(prefilter)(x)
         GF     = layers.Concatenate()([GF,GFdown])
         GF = layers.Dense(filters)(GF)
@@ -64,7 +63,7 @@ def SVBRDF(num_classes):
 
     for filters in Upfilters:
 
-        GFdown = layers.AveragePooling2D(x.shape[1])(x)
+        GFdown = layers.AveragePooling2D((x.shape[1],x.shape[1]))(x)
         GFup   = layers.Dense(prefilter)(x)
         GF     = layers.Concatenate()([GF,GFdown])
         GF = layers.Dense(filters)(GF)
@@ -90,5 +89,5 @@ def SVBRDF(num_classes):
     return model
 
 #keras.backend.clear_session()
-svbrdf = SVBRDF(9)
-svbrdf.summary()
+#svbrdf = SVBRDF(9)
+#svbrdf.summary()
