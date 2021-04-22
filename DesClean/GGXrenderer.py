@@ -1,8 +1,9 @@
 
 import numpy as np
 import tensorflow as tf
-
+#
 PI = tf.constant(np.pi,dtype = tf.float32)
+bs = 8
 
 def l1_loss(mgt, mif):
     return tf.reduce_mean(tf.abs(mgt-mif))
@@ -11,7 +12,12 @@ def l2_loss(mgt, mif):
     return tf.reduce_mean(tf.square(mgt-mif))
 
 def rendering_loss(mgt, mif):
-    return l1_loss(GGXtf(mgt),GGXtf(mif))
+    loss = 0
+    for i in range(bs):
+        gtruth = mgt[i]
+        ifred  = mif[i] 
+        loss += 0.4* l1_loss(GGXtf(gtruth),GGXtf(ifred)) + 0.6* l1_loss(gtruth,ifred)
+    return loss
 
 def normalisation(vec):
     return vec/tf.norm(vec,axis = -1)[:,:,None]
@@ -50,8 +56,8 @@ def GGXtf(maps):
 
     albedomap, specularmap, normalinmap, roughnessmap = process(maps)
     
-    shapex = int(maps.shape[0])
-    shapey = int(maps.shape[1])
+    shapex = 256
+    shapey = 256
 
     x = np.linspace(0,shapex-1,shapex)
     y = np.linspace(0,shapey-1,shapey)

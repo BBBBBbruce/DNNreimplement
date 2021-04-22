@@ -1,7 +1,7 @@
 import tensorflow as tf
 from datetime import datetime
 import random
-
+#
 
 NN_size = 256
 batch_size = 8
@@ -39,15 +39,16 @@ def tf_im_stack_map(raw):
     ins, outs = tf.py_function(func = img_process, inp = [raw],Tout =(tf.float32,tf.float32) )
     ins.set_shape((256,256,3))
     outs.set_shape((256,256,9))
-    ins = tf.expand_dims(ins, axis=0)
-    outs = tf.expand_dims(outs, axis=0)
+    #ins = tf.expand_dims(ins, axis=0)
+    #outs = tf.expand_dims(outs, axis=0)
     return ins,outs
 
 def svbrdf_gen(path, bs):
     dataset = tf.data.Dataset.list_files(path+'\*.png')
     image_ds = dataset.map(parse_path)
     trainset = image_ds.map(tf_im_stack_map)
-    trainset.batch(bs)
+    trainset = trainset.repeat()
+    trainset = trainset.batch(bs)
     return trainset
 
 
