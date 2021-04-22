@@ -1,7 +1,7 @@
 import tensorflow as tf
 from datetime import datetime
 import random
-
+#
 
 NN_size = 256
 batch_size = 8

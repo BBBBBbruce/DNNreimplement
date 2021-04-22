@@ -9,7 +9,7 @@ from tensorflow.keras.optimizers import Adam
 #os.environ['AUTOGRAPH_VERBOSITY'] = 5
 model = SVBRDF(9)
 #model.summary()
-
+#
 train_path = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\trainBlended'
 #test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\testBlended'
 test_path = 'D:\Y4\DNNreimplement\Deschaintre\Dataset\Train'

@@ -1,7 +1,7 @@
 
 import numpy as np
 import tensorflow as tf
-
+#
 PI = tf.constant(np.pi,dtype = tf.float32)
 
 def l1_loss(mgt, mif):
