@@ -8,15 +8,17 @@ batch_size = 8
 
 def imagestack_img(img):
     shape = img.shape[0]
+
     inputimg = img[:,0:shape,:] #rendered 3 channels
 
     albedo  = img[:,shape*2:shape*3,: ]
     specular= img[:,shape*4:shape*5,: ]
-    normal  = img[:,shape:shape*2  ,1:]
+    normal  = img[:,shape  :shape*2,:2]
     rough   = img[:,shape*3:shape*4,0 ]
+    rough = tf.expand_dims(rough,axis=-1)
 
-    return inputimg, tf.concat([albedo,specular,normal,tf.reshape(rough,(shape,shape,1))],axis = -1)
-
+    return inputimg, tf.concat([albedo,specular,normal,rough],axis = -1)
+    
 def parse_path(path):
     image_string = tf.io.read_file(path)
     #raw_input = tf.cast(tf.image.decode_image(image_string),tf.float32)

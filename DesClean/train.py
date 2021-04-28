@@ -1,42 +1,33 @@
 
 import tensorflow as tf
-from svbrdf import SVBRDF
+from svbrdf import SVBRDF,UNET
 from DataGen import svbrdf_gen
-from GGXrenderer import rendering_loss,l1_loss,normalisation
+from GGXrenderer import rendering_loss,l1_loss,normalisation,l2_loss
 from tensorflow.keras.optimizers import Adam 
 import matplotlib.pyplot as plt
 import numpy as np
 num_epochs = 20
 
-def display(svbrdf):
+def display(photo, svbrdf):
     
     def process(maps):
         return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
-    albedomap, specularmap, normalinmap, roughnessmap = process(svbrdf)
-    
-    shapex = 256
-    shapey = 256
 
-    x = np.linspace(0,shapex-1,shapex)
-    y = np.linspace(0,shapey-1,shapey)
-    xx,yy = tf.meshgrid(x,y)
-    xx = tf.cast(tf.reshape(xx ,(shapex,shapey,1)),dtype = tf.float32)
-    yy = tf.cast(tf.reshape(yy ,(shapex,shapey,1)),dtype = tf.float32)
-    padd1 = tf.reshape(tf.ones ([shapex,shapey],dtype = tf.float32)*255,(shapex,shapey,1))
+    albedo, specular, normal, rough = process(svbrdf)
 
-    N = normalisation(tf.concat([normalinmap,padd1],axis = -1)/255)
+    rough = tf.expand_dims(rough,axis=-1)
 
-    plt.figure(figsize=(15, 15))
-    roughnessmap = tf.expand_dims(roughnessmap,-1)
-    #print(albedomap.shape, specularmap.shape, N.shape, roughnessmap.shape)
-    title = ['albedo', 'specular', 'normal','roughness']
-    display_list=[albedomap, specularmap, N, roughnessmap]
+    padd1 = tf.ones ([256,256,1],dtype = tf.float32)
+
+    N = tf.concat([normal,padd1],axis = -1)
+
+    title = ['photo','albedo', 'specular', 'normal','roughness']
+    display_list=[photo, albedo, specular, N, rough]
     for i in range(len(display_list)):
         plt.subplot(1, len(display_list), i+1)
         plt.title(title[i])
         plt.imshow(tf.keras.preprocessing.image.array_to_img(display_list[i]))
         plt.axis('off')
-
     plt.show()
 
 
@@ -46,14 +37,18 @@ class DisplayCallback(tf.keras.callbacks.Callback):
     print ('\nSample Prediction after epoch {}\n'.format(epoch+1))
 
 def show_predictions ( num=1 ):
-    for photo, _ in sample_ds.take(num):
+    for photo, svbrdf in sample_ds.take(num):
+
         pred_svbrdf= model.predict(photo)
-        display(pred_svbrdf[0])
+        display(photo[0],svbrdf[0])
+        display(photo[0],pred_svbrdf[0])
+        
 
 
 #tf.keras.backend.floatx()
 #os.environ['AUTOGRAPH_VERBOSITY'] = 5
 model = SVBRDF(9)
+#model = UNET(9)
 #model.summary()
 
 sample = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\Train_smaller'
@@ -61,13 +56,15 @@ train_path = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\trainBlended'
 #test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\testBlended'
 #test_path = 'D:\Y4\DNNreimplement\Deschaintre\Dataset\Train'
 print('load_data')
-ds = svbrdf_gen(train_path,8)
+ds = svbrdf_gen(sample,8)
 sample_ds = svbrdf_gen(sample,8)
 print(ds.element_spec)
 print('finish_loading')
+
+
 opt = Adam(lr=0.0002)
 model.compile(optimizer = opt, loss = l1_loss, metrics = ['mse'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 20, epochs=20,callbacks=[DisplayCallback()]) #24884
+hitory = model.fit( ds,verbose =1 , steps_per_epoch = 20, epochs=20)#,callbacks=[DisplayCallback()]) #24884
 
 plt.plot(list(range(0, num_epochs)), hitory.history['loss'], label=' Loss',c='r',alpha=0.6)
 plt.plot(list(range(0, num_epochs)), hitory.history['mse'], label=' mse',c='b',alpha=0.6)
