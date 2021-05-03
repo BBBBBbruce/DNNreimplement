@@ -1,6 +1,6 @@
 
 import tensorflow as tf
-from svbrdf import SVBRDF,UNET
+from svbrdf import SVBRDF,UNET_exact,UNET_1cnn  
 from DataGen import svbrdf_gen
 from GGXrenderer import rendering_loss,l1_loss,normalisation,l2_loss
 from tensorflow.keras.optimizers import Adam 
@@ -26,7 +26,7 @@ def display(photo, svbrdf):
     for i in range(len(display_list)):
         plt.subplot(1, len(display_list), i+1)
         plt.title(title[i])
-        plt.imshow(tf.keras.preprocessing.image.array_to_img(display_list[i]))
+        plt.imshow(display_list[i])
         plt.axis('off')
     plt.show()
 
@@ -47,7 +47,7 @@ def show_predictions ( num=1 ):
 
 #tf.keras.backend.floatx()
 #os.environ['AUTOGRAPH_VERBOSITY'] = 5
-model = SVBRDF(9)
+model = UNET_1cnn(9)
 #model = UNET(9)
 #model.summary()
 
@@ -56,15 +56,15 @@ train_path = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\trainBlended'
 #test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\testBlended'
 #test_path = 'D:\Y4\DNNreimplement\Deschaintre\Dataset\Train'
 print('load_data')
-ds = svbrdf_gen(sample,8)
+ds = svbrdf_gen(train_path,8)
 sample_ds = svbrdf_gen(sample,8)
 print(ds.element_spec)
 print('finish_loading')
 
 
-opt = Adam(lr=0.0002)
+opt = Adam(lr=0.00002)
 model.compile(optimizer = opt, loss = l1_loss, metrics = ['mse'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 20, epochs=20)#,callbacks=[DisplayCallback()]) #24884
+hitory = model.fit( ds,verbose =1 , steps_per_epoch = 2000, epochs=20,callbacks=[DisplayCallback()]) #24884
 
 plt.plot(list(range(0, num_epochs)), hitory.history['loss'], label=' Loss',c='r',alpha=0.6)
 plt.plot(list(range(0, num_epochs)), hitory.history['mse'], label=' mse',c='b',alpha=0.6)

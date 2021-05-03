@@ -24,7 +24,8 @@ def display(photo, svbrdf):
     for i in range(len(display_list)):
         plt.subplot(1, len(display_list), i+1)
         plt.title(title[i])
-        plt.imshow(tf.keras.preprocessing.image.array_to_img(display_list[i]))
+        #splt.imshow(tf.keras.preprocessing.image.array_to_img(display_list[i]))
+        plt.imshow(display_list[i])
         plt.axis('off')
     plt.show()
 
@@ -43,12 +44,10 @@ ds = svbrdf_gen(test_path,8)
 print(ds.element_spec)
 print('finish_loading')
 
-
-
 opt = Adam(lr=0.00002)
 new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_saved_1', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
 #new_model.summary()
-new_model.compile(optimizer = opt, loss = l1_loss, metrics = ['mse'])
+new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['mse'])
 
 
 show_predictions(ds,new_model,1)

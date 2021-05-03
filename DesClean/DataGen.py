@@ -24,6 +24,7 @@ def parse_path(path):
     #raw_input = tf.cast(tf.image.decode_image(image_string),tf.float32)
     raw_input = tf.image.decode_image(image_string,dtype = tf.float32)
     #tst = tf.ones((288,288*5,3),dtype = tf.float64)
+
     return raw_input
 
 def img_process(raw):
@@ -45,10 +46,21 @@ def tf_im_stack_map(raw):
     #outs = tf.expand_dims(outs, axis=0)
     return ins,outs
 
+def parse_func(path):
+    image_string = tf.io.read_file(path)
+    raw_input = tf.image.decode_image(image_string,dtype = tf.float32)
+    ins, outs = tf.py_function(func = img_process, inp = [raw_input],Tout =(tf.float32,tf.float32) )
+    ins.set_shape((256,256,3))
+    outs.set_shape((256,256,9))
+    return ins,outs
+
 def svbrdf_gen(path, bs):
     dataset = tf.data.Dataset.list_files(path+'\*.png')
-    image_ds = dataset.map(parse_path)
-    trainset = image_ds.map(tf_im_stack_map)
+
+    #image_ds = dataset.map(parse_path)
+    #trainset = image_ds.map(tf_im_stack_map)
+    trainset = dataset.map(parse_func)
+
     trainset = trainset.repeat()
     trainset = trainset.batch(bs)
     return trainset

@@ -47,29 +47,37 @@ def process(maps):
 
 def GGXtf(maps):
     
-    def GGXpxl(V,L,N,albedo,metallic,rough):
-    
-        albedo   = albedo
-        metallic = tf.reduce_mean(metallic,axis = -1)# set to single value
-        rough= rough**2
+    def match_dim (map):
+        return tf.expand_dims(map,axis = -1)
 
+    def GGXpxl(V,L,N,albedo,metallic,rough):
+        #print(V.shape,L.shape,N.shape,albedo.shape,rough.shape)
+        #metallic = tf.reduce_mean(metallic,axis = -1)# set to single value
+        rough= rough**2
+        rough = match_dim(rough)
         H = normalisation(V+L)
-        VdotH = tf.maximum(tf.reduce_sum(V*H,axis = -1),0)
-        NdotH = tf.maximum(tf.reduce_sum(N*H,axis = -1),0)
-        NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1),0)
-        NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1),0)
-        F = metallic+ (1 - metallic) * (1 - VdotH)**5
+        VdotH = tf.maximum(tf.reduce_sum(V*H,axis = -1,keepdims = True),0)
+        NdotH = tf.maximum(tf.reduce_sum(N*H,axis = -1,keepdims = True),0)
+        NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1,keepdims = True),0)
+        NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1,keepdims = True),0)
+
+        F = metallic+ tf.math.multiply((1 - metallic) , (1 - VdotH)**5)
         NDF = 1 / (PI*rough*pow(NdotH,4.0))*tf.exp((NdotH * NdotH - 1.0) / (rough * NdotH * NdotH))
         G = tf.minimum( 2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH)
         G = tf.minimum(tf.cast(1,dtype = tf.float32) , G)
         nominator    = NDF* G * F 
         denominator = 4 * NdotV * NdotL + 0.001
         specular = nominator / denominator
-        diffuse = (1-metallic)[:,:,None] * albedo / PI *NdotL[:,:,None] 
+        
+        #diffuse = (1-metallic)[:,:,None] * albedo / PI *NdotL[:,:,None] 
+
+        diffuse = (1-metallic) * albedo / PI *NdotL
 
         reflection = specular * NdotL*4 #* radiance 
-        reflection = tf.reshape(reflection,(256,256,1))
-        color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1
+        #reflection = tf.reshape(reflection,(256,256,1))
+
+        #color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1
+        color = reflection + diffuse*1
         return color**(1/1.8)
 
     maps = tf.squeeze(maps)
@@ -110,7 +118,7 @@ def GGXtf(maps):
     return  imgout
 
 
-
+'''
 tf.compat.v1.enable_eager_execution()
 
 path = 'E:\workspace_ms_zhiyuan\DNNreimplement\Deschaintre\Dataset\inputExamples\example.png'
@@ -127,3 +135,4 @@ out1 = GGXtf(maps)
 print('finish rendering, using '+str(time.time()-st)+' seconds')
 plt.imshow(out1)
 plt.show()
+'''
