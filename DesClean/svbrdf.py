@@ -127,20 +127,20 @@ def UNET_exact (num_classes):
     ### [First half of the network: downsampling inputs] ###
 
     # Entry block
-    x = layers.Conv2D(filters = 128, kernel_size = 4, strides=2, padding="same")(inputs)
+    x = layers.Conv2D(filters = 64, kernel_size = 4, strides=2, padding="same")(inputs)
     x = layers.BatchNormalization()(x)
     x = layers.Activation("relu")(x)
 
     previous_block_activation = x  # Set aside residual
 
     # Blocks 1, 2, 3 are identical apart from the feature depth.
-    for fltrs in [256,512,512,512,512,512,512]:
-        x = layers.Activation("relu")(x)
-        x = layers.SeparableConv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
+    for fltrs in [64, 128,128,256,512,512,1024]:
+        x = layers.Activation("selu")(x)
+        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
         x = layers.BatchNormalization()(x)
 
-        x = layers.Activation("relu")(x)
-        x = layers.SeparableConv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
+        x = layers.Activation("selu")(x)
+        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
         x = layers.BatchNormalization()(x)
 
         x = layers.MaxPooling2D(3, strides=2, padding="same")(x)
@@ -152,12 +152,13 @@ def UNET_exact (num_classes):
 
     ### [Second half of the network: upsampling inputs] ###
     #[256, 128, 64, 32]
-    for fltrs in [512,512,512,512,512,512,256,128]:
-        x = layers.Activation("relu")(x)
-        x = layers.Conv2DTranspose(filters = fltrs, kernel_size = 4, padding="same")(x)
+    for fltrs in [1024,512,512,256,128,128,64,64]:
+        x = layers.Activation("selu")(x)
+        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
         x = layers.BatchNormalization()(x)
-        x = layers.Activation("relu")(x)
-        x = layers.Conv2DTranspose(filters = fltrs, kernel_size = 4, padding="same")(x)
+
+        x = layers.Activation("selu")(x)
+        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
         x = layers.BatchNormalization()(x)
 
         x = layers.UpSampling2D(2)(x)
@@ -169,8 +170,7 @@ def UNET_exact (num_classes):
         previous_block_activation = x  # Set aside next residual
 
     # Add a per-pixel classification layer
-    outputs = layers.Conv2D(num_classes, 3, activation="softmax", padding="same")(x)
-
+    outputs = layers.Conv2D(num_classes, 3, activation="sigmoid", padding="same")(x)
     # Define the model
     model = keras.Model(inputs, outputs)
     return model
@@ -240,6 +240,63 @@ def UNET_1cnn( num_classes):
     # Define the model
     model = keras.Model(inputs, outputs)
     return model
+
+def UNET_paper(num_classes):
+    inputs = keras.Input(shape=(256,256) + (3,))
+
+    ### [First half of the network: downsampling inputs] ###
+
+    # Entry block
+    encoder1 = layers.Conv2D(filters = 64, kernel_size = 4, strides=2, padding="same")(inputs)
+    layer1 = layers.BatchNormalization()(encoder1)
+    encoder1 = layers.Activation("relu")(encoder1) 
+
+    encoder1 = layers.Conv2D(filters = 64, kernel_size = 4, strides=2, padding="same")(inputs)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    previous_block_activation = x  # Set aside residual
+
+    # Blocks 1, 2, 3 are identical apart from the feature depth.
+    for fltrs in [64, 128,128,256,512,512,1024]:
+        x = layers.Activation("relu")(x)
+        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
+        x = layers.BatchNormalization()(x)
+
+        x = layers.Activation("selu")(x)
+        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
+        x = layers.BatchNormalization()(x)
+
+        x = layers.MaxPooling2D(3, strides=2, padding="same")(x)
+
+        # Project residual
+        residual = layers.Conv2D(fltrs, 1, strides=2, padding="same")(previous_block_activation)
+        x = layers.add([x, residual])  # Add back residual
+        previous_block_activation = x  # Set aside next residual
+
+    ### [Second half of the network: upsampling inputs] ###
+    #[256, 128, 64, 32]
+    for fltrs in [1024,512,512,256,128,128,64,64]:
+        x = layers.Activation("selu")(x)
+        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
+        x = layers.BatchNormalization()(x)
+
+        x = layers.Activation("selu")(x)
+        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
+        x = layers.BatchNormalization()(x)
+
+        x = layers.UpSampling2D(2)(x)
+
+        residual = layers.UpSampling2D(2)(previous_block_activation)
+        #print(residual.shape)
+        residual = layers.Conv2D(fltrs, 1, padding="same")(residual)
+        x = layers.add([x, residual])  # Add back residual
+        previous_block_activation = x  # Set aside next residual
+
+    # Add a per-pixel classification layer
+    outputs = layers.Conv2D(num_classes, 3, activation="sigmoid", padding="same")(x)
+    new3 =  layers.add([inputs[:,:,:,0:2] , outputs[:,:,:,0:2]])  # TODO: IMPLEMNET THIS IDEA
+    outputs = layers.Concatenate()([new3, outputs[:,:,:,2:]])
 
 #model = UNET(9)
 #model.summary()
