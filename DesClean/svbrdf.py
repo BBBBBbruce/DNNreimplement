@@ -1,3 +1,4 @@
+from json import decoder
 from tensorflow import keras
 import numpy as np
 from tensorflow.keras import layers
@@ -247,56 +248,113 @@ def UNET_paper(num_classes):
     ### [First half of the network: downsampling inputs] ###
 
     # Entry block
-    encoder1 = layers.Conv2D(filters = 64, kernel_size = 4, strides=2, padding="same")(inputs)
-    layer1 = layers.BatchNormalization()(encoder1)
+    encoder1 = layers.Conv2D(filters = 64, kernel_size = 4, padding="same")(inputs)
+    encoder1 = layers.BatchNormalization()(encoder1)
     encoder1 = layers.Activation("relu")(encoder1) 
 
-    encoder1 = layers.Conv2D(filters = 64, kernel_size = 4, strides=2, padding="same")(inputs)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
+    encoder1 = layers.Conv2D(filters = 64, kernel_size = 4, padding="same")(encoder1)
+    encoder1 = layers.BatchNormalization()(encoder1)
+    encoder1 = layers.Activation("relu")(encoder1)
 
-    previous_block_activation = x  # Set aside residual
+    encoder1 = layers.MaxPooling2D(kernel_size = 2, padding="same")(encoder1)
 
-    # Blocks 1, 2, 3 are identical apart from the feature depth.
-    for fltrs in [64, 128,128,256,512,512,1024]:
-        x = layers.Activation("relu")(x)
-        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
-        x = layers.BatchNormalization()(x)
 
-        x = layers.Activation("selu")(x)
-        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
-        x = layers.BatchNormalization()(x)
+    encoder2 = layers.Conv2D(filters = 128, kernel_size = 4, padding="same")(encoder1)
+    encoder2 = layers.BatchNormalization()(encoder2)
+    encoder2 = layers.Activation("relu")(encoder2) 
 
-        x = layers.MaxPooling2D(3, strides=2, padding="same")(x)
+    encoder2 = layers.Conv2D(filters = 128, kernel_size = 4, padding="same")(encoder2)
+    encoder2 = layers.BatchNormalization()(encoder2)
+    encoder2 = layers.Activation("relu")(encoder2)
 
-        # Project residual
-        residual = layers.Conv2D(fltrs, 1, strides=2, padding="same")(previous_block_activation)
-        x = layers.add([x, residual])  # Add back residual
-        previous_block_activation = x  # Set aside next residual
+    encoder2 = layers.MaxPooling2D(kernel_size = 2, padding="same")(encoder2)
 
-    ### [Second half of the network: upsampling inputs] ###
-    #[256, 128, 64, 32]
-    for fltrs in [1024,512,512,256,128,128,64,64]:
-        x = layers.Activation("selu")(x)
-        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
-        x = layers.BatchNormalization()(x)
 
-        x = layers.Activation("selu")(x)
-        x = layers.Conv2D(filters = fltrs, kernel_size = 4, padding="same")(x)
-        x = layers.BatchNormalization()(x)
+    encoder3 = layers.Conv2D(filters = 256, kernel_size = 4, padding="same")(encoder2)
+    encoder3 = layers.BatchNormalization()(encoder3)
+    encoder3 = layers.Activation("relu")(encoder3) 
 
-        x = layers.UpSampling2D(2)(x)
+    encoder3 = layers.Conv2D(filters = 256, kernel_size = 4, padding="same")(encoder3)
+    encoder3 = layers.BatchNormalization()(encoder3)
+    encoder3 = layers.Activation("relu")(encoder3)
 
-        residual = layers.UpSampling2D(2)(previous_block_activation)
-        #print(residual.shape)
-        residual = layers.Conv2D(fltrs, 1, padding="same")(residual)
-        x = layers.add([x, residual])  # Add back residual
-        previous_block_activation = x  # Set aside next residual
+    encoder3 = layers.MaxPooling2D(kernel_size = 2, padding="same")(encoder3)
 
-    # Add a per-pixel classification layer
-    outputs = layers.Conv2D(num_classes, 3, activation="sigmoid", padding="same")(x)
-    new3 =  layers.add([inputs[:,:,:,0:2] , outputs[:,:,:,0:2]])  # TODO: IMPLEMNET THIS IDEA
-    outputs = layers.Concatenate()([new3, outputs[:,:,:,2:]])
+    encoder4 = layers.Conv2D(filters = 512, kernel_size = 4, padding="same")(encoder3)
+    encoder4 = layers.BatchNormalization()(encoder4)
+    encoder4 = layers.Activation("relu")(encoder4) 
+
+    encoder4 = layers.Conv2D(filters = 512, kernel_size = 4, padding="same")(encoder4)
+    encoder4 = layers.BatchNormalization()(encoder4)
+    encoder4 = layers.Activation("relu")(encoder4)
+
+    encoder4 = layers.MaxPooling2D(kernel_size = 2, padding="same")(encoder4)
+
+
+    encoder5 = layers.Conv2D(filters = 1024, kernel_size = 4, padding="same")(encoder4)
+    encoder5 = layers.BatchNormalization()(encoder5)
+    encoder5 = layers.Activation("relu")(encoder5) 
+
+    encoder5 = layers.Conv2D(filters = 1024, kernel_size = 4, padding="same")(encoder5)
+    encoder5 = layers.BatchNormalization()(encoder5)
+    encoder5 = layers.Activation("relu")(encoder5)
+
+    encoder5 = layers.Conv2DTranspose(filters = 512,kernel_size=2,strides = 2, padding= "same")(encoder5)
+
+    
+    decoder4 = layers.Concatenate()([encoder4,encoder5])
+
+    decoder4 = layers.Conv2D(filters = 512, kernel_size = 4, padding="same")(decoder4)
+    decoder4 = layers.BatchNormalization()(decoder4)
+    decoder4 = layers.Activation("relu")(decoder4) 
+
+    decoder4 = layers.Conv2D(filters = 512, kernel_size = 4, padding="same")(decoder4)
+    decoder4 = layers.BatchNormalization()(decoder4)
+    decoder4 = layers.Activation("relu")(decoder4)
+
+    decoder4 = layers.Conv2DTranspose(filters = 256,kernel_size=2,strides = 2, padding= "same")(decoder4)
+
+
+    decoder3 = layers.Concatenate()([encoder3,decoder4])
+
+    decoder3 = layers.Conv2D(filters = 256, kernel_size = 4, padding="same")(decoder3)
+    decoder3 = layers.BatchNormalization()(decoder3)
+    decoder3 = layers.Activation("relu")(decoder3) 
+
+    decoder3 = layers.Conv2D(filters = 256, kernel_size = 4, padding="same")(decoder3)
+    decoder3 = layers.BatchNormalization()(decoder3)
+    decoder3 = layers.Activation("relu")(decoder3)
+
+    decoder3 = layers.Conv2DTranspose(filters = 128,kernel_size=2,strides = 2, padding= "same")(decoder3)
+
+
+    decoder2 = layers.Concatenate()([encoder2,decoder3])
+
+    decoder2 = layers.Conv2D(filters = 128, kernel_size = 4, padding="same")(decoder2)
+    decoder2 = layers.BatchNormalization()(decoder2)
+    decoder2 = layers.Activation("relu")(decoder2) 
+
+    decoder2 = layers.Conv2D(filters = 128, kernel_size = 4, padding="same")(decoder2)
+    decoder2 = layers.BatchNormalization()(decoder2)
+    decoder2 = layers.Activation("relu")(decoder2)
+
+    decoder2 = layers.Conv2DTranspose(filters = 64,kernel_size=2,strides = 2, padding= "same")(decoder2)  
+
+
+    decoder1 = layers.Concatenate()([encoder1,decoder2])
+
+    decoder1 = layers.Conv2D(filters = 64, kernel_size = 4, padding="same")(decoder1)
+    decoder1 = layers.BatchNormalization()(decoder1)
+    decoder1 = layers.Activation("relu")(decoder1) 
+
+    decoder1 = layers.Conv2D(filters = 64, kernel_size = 4, padding="same")(decoder1)
+    decoder1 = layers.BatchNormalization()(decoder1)
+    decoder1 = layers.Activation("relu")(decoder1)
+
+    outputs = layers.Conv2D(num_classes, kernel_size = 1, activation="sigmoid", padding="same")(decoder1)
+
+    model = keras.Model(inputs, outputs)
+    return model
 
 #model = UNET(9)
 #model.summary()
