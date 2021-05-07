@@ -34,7 +34,7 @@ def display(photo, svbrdf):
     plt.show()
 
 def display_tbs(svbrdf,epoch):
-    #svbrdf = (svbrdf+1)/2
+    svbrdf = (svbrdf+1)/2
     def process(maps):
         return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
 
@@ -119,7 +119,7 @@ train_path = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\trainBlended'
 #test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\testBlended'
 #test_path = 'D:\Y4\DNNreimplement\Deschaintre\Dataset\Train'
 print('load_data')
-ds = svbrdf_gen(sample,8)
+ds = svbrdf_gen(train_path,8)
 sample_ds = svbrdf_gen(sample,8)
 print(ds.element_spec)
 print('finish_loading')
@@ -130,7 +130,7 @@ for photo, svbrdf in sample_ds.take(1):
 
 opt = Adam(lr=learning_rate)
 model.compile(optimizer = opt, loss = l1_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 1000, epochs=20,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
+hitory = model.fit( ds,verbose =1 , steps_per_epoch = 2000, epochs=20,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
 
 '''
 for photo, svbrdf in sample.take(num):
