@@ -1,4 +1,4 @@
-from json import decoder
+
 from tensorflow import keras
 import numpy as np
 from tensorflow.keras import layers
@@ -491,6 +491,3 @@ def UNET_paper2(num_classes):
     return model
 
 
-
-#model = UNET_paper(9)
-#model.summary()
