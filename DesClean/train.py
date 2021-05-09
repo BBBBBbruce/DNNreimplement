@@ -141,7 +141,7 @@ for photo, svbrdf in sample.take(num):
 #plt.plot(list(range(0, num_epochs)), hitory.history['loss'], label=' Loss',c='r',alpha=0.6)
 #plt.plot(list(range(0, num_epochs)), hitory.history['mse'], label=' mse',c='b',alpha=0.6)
 
-model.save('E:\workspace_ms_zhiyuan\DNNreimplement\Model_saved_1')
+model.save('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_saved_1')
 #plt.show()
 
 

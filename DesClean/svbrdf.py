@@ -485,7 +485,7 @@ def UNET_paper2(num_classes):
     decoder1 = layers.BatchNormalization()(decoder1)
     decoder1 = layers.Activation("selu")(decoder1)
 
-    outputs = layers.Conv2D(num_classes, kernel_size = 1, activation="tanh", padding="same")(decoder1)
+    outputs = layers.Conv2D(num_classes, kernel_size = 1, activation="sigmoid", padding="same")(decoder1)
 
     model = keras.Model(inputs, outputs)
     return model
