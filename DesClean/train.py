@@ -1,6 +1,7 @@
 
 import tensorflow as tf
 from svbrdf import SVBRDF,UNET_exact,UNET_1cnn  ,UNET_paper,UNET_paper2
+from svbrdf_reimplement import SVBRDF_debugged
 from DataGen import svbrdf_gen
 from GGXrenderer import rendering_loss,l1_loss,normalisation,l2_loss
 from tensorflow.keras.optimizers import Adam 
@@ -34,7 +35,7 @@ def display(photo, svbrdf):
     plt.show()
 
 def display_tbs(svbrdf,epoch):
-    svbrdf = (svbrdf+1)/2
+    #svbrdf = (svbrdf+1)/2
     def process(maps):
         return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
 
@@ -109,7 +110,7 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="E:\workspace_ms_z
 #tf.keras.backend.floatx()
 
 #os.environ['AUTOGRAPH_VERBOSITY'] = 5
-model = UNET_paper2(9)
+model = SVBRDF_debugged(9)
 learning_rate = 0.00002
 #model = UNET(9)
 #model.summary()
@@ -130,7 +131,7 @@ for photo, svbrdf in sample_ds.take(1):
 
 opt = Adam(lr=learning_rate)
 model.compile(optimizer = opt, loss = l1_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 2000, epochs=20,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
+hitory = model.fit( ds,verbose =1 , steps_per_epoch = 200, epochs=20,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
 
 '''
 for photo, svbrdf in sample.take(num):
@@ -141,7 +142,7 @@ for photo, svbrdf in sample.take(num):
 #plt.plot(list(range(0, num_epochs)), hitory.history['loss'], label=' Loss',c='r',alpha=0.6)
 #plt.plot(list(range(0, num_epochs)), hitory.history['mse'], label=' mse',c='b',alpha=0.6)
 
-model.save('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_saved_1')
+model.save('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_saved_1')
 #plt.show()
 
 

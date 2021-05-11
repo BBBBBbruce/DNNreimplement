@@ -36,7 +36,7 @@ def rendering_loss(mgt, mif):
     for i in range(bs):
         gtruth = mgt[i]
         ifred  = mif[i] 
-        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) #*0.4+ 0.6* l1_loss(gtruth,ifred)
+        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) *0.4+ 0.6* l1_loss(gtruth,ifred)
     return loss/bs
 
 def normalisation(vec):
