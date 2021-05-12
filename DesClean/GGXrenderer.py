@@ -36,7 +36,7 @@ def rendering_loss(mgt, mif):
     for i in range(bs):
         gtruth = mgt[i]
         ifred  = mif[i] 
-        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) *0.4+ 0.6* l1_loss(gtruth,ifred)
+        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) #*0.4+ 0.6* l1_loss(gtruth,ifred)
     return loss/bs
 
 def normalisation(vec):
@@ -81,6 +81,7 @@ def GGXtf(maps):
         return color**(1/1.8)
 
     maps = tf.squeeze(maps)
+    maps = (maps+1)/2
     lightpos = tf.constant([288,288,200],dtype = tf.float32)
     viewpos  = tf.constant([143,143,288],dtype = tf.float32)
 

@@ -35,7 +35,7 @@ def display(photo, svbrdf):
     plt.show()
 
 def display_tbs(svbrdf,epoch):
-    #svbrdf = (svbrdf+1)/2
+    svbrdf = (svbrdf+1)/2
     def process(maps):
         return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
 
@@ -130,8 +130,8 @@ for photo, svbrdf in sample_ds.take(1):
         display_tbs(svbrdf[0],0)
 
 opt = Adam(lr=learning_rate)
-model.compile(optimizer = opt, loss = l1_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 200, epochs=20,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
+model.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+hitory = model.fit( ds,verbose =1 , steps_per_epoch = 2000, epochs=20,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
 
 '''
 for photo, svbrdf in sample.take(num):
