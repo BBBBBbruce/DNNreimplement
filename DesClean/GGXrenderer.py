@@ -54,35 +54,39 @@ def GGXtf(maps):
         #print(V.shape,L.shape,N.shape,albedo.shape,rough.shape)
         #metallic = tf.reduce_mean(metallic,axis = -1)# set to single value
         rough= rough**2
-        rough = match_dim(rough)
+        rough = match_dim(rough+0.0001)
         H = normalisation(V+L)
-        VdotH = tf.maximum(tf.reduce_sum(V*H,axis = -1,keepdims = True),0)
-        NdotH = tf.maximum(tf.reduce_sum(N*H,axis = -1,keepdims = True),0)
-        NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1,keepdims = True),0)
-        NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1,keepdims = True),0)
+        VdotH = tf.maximum(tf.reduce_sum(V*H,axis = -1,keepdims = True),0.0001)
+        NdotH = tf.maximum(tf.reduce_sum(N*H,axis = -1,keepdims = True),0.0001)
+        NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1,keepdims = True),0.0001)
+        NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1,keepdims = True),0.0001)
 
         F = metallic+ tf.math.multiply((1 - metallic) , (1 - VdotH)**5)
         NDF = 1 / (PI*rough*pow(NdotH,4.0))*tf.exp((NdotH * NdotH - 1.0) / (rough * NdotH * NdotH))
         G = tf.minimum( 2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH)
         G = tf.minimum(tf.cast(1,dtype = tf.float32) , G)
         nominator    = NDF* G * F 
-        denominator = 4 * NdotV * NdotL + 0.001
+        denominator = 4 * NdotV * NdotL 
         specular = nominator / denominator
         
         #diffuse = (1-metallic)[:,:,None] * albedo / PI *NdotL[:,:,None] 
 
         diffuse = (1-metallic) * albedo / PI *NdotL
 
-        reflection = specular * NdotL*4 #* radiance 
+        reflection = specular * NdotL*1.5 #* radiance 
         #reflection = tf.reshape(reflection,(256,256,1))
 
         #color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1
         color = reflection + diffuse*1
-        return color**(1/1.8)
+        return color#**(1/1.8)
 
     maps = tf.squeeze(maps)
     maps = (maps+1)/2
-    lightpos = tf.constant([288,288,200],dtype = tf.float32)
+
+    ran_seed = random.seed(dt.now())
+    light_xy = tf.random.uniform(shape=[2], maxval=1100, dtype=tf.float32, seed=ran_seed).numpy()
+    lightpos = tf.constant([light_xy[0],light_xy[1],1000],dtype = tf.float32)
+
     viewpos  = tf.constant([143,143,288],dtype = tf.float32)
 
     albedomap, specularmap, normalinmap, roughnessmap = process(maps)
