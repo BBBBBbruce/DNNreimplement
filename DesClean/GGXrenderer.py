@@ -4,7 +4,7 @@ import tensorflow as tf
 
 import time
 import random
-from datetime import datetime
+from datetime import datetime as dt
 import matplotlib.pyplot as plt
 #
 PI = tf.constant(np.pi,dtype = tf.float32)
@@ -36,7 +36,7 @@ def rendering_loss(mgt, mif):
     for i in range(bs):
         gtruth = mgt[i]
         ifred  = mif[i] 
-        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) #*0.4+ 0.6* l1_loss(gtruth,ifred)
+        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) *0.4+ 0.6* l1_loss(gtruth,ifred)
     return loss/bs
 
 def normalisation(vec):
@@ -54,19 +54,19 @@ def GGXtf(maps):
         #print(V.shape,L.shape,N.shape,albedo.shape,rough.shape)
         #metallic = tf.reduce_mean(metallic,axis = -1)# set to single value
         rough= rough**2
-        rough = match_dim(rough+0.0001)
+        rough = match_dim(rough+0.01)
         H = normalisation(V+L)
-        VdotH = tf.maximum(tf.reduce_sum(V*H,axis = -1,keepdims = True),0.0001)
-        NdotH = tf.maximum(tf.reduce_sum(N*H,axis = -1,keepdims = True),0.0001)
-        NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1,keepdims = True),0.0001)
-        NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1,keepdims = True),0.0001)
+        VdotH = tf.maximum(tf.reduce_sum(V*H,axis = -1,keepdims = True),0.01)
+        NdotH = tf.maximum(tf.reduce_sum(N*H,axis = -1,keepdims = True),0.01)
+        NdotV = tf.maximum(tf.reduce_sum(V*N,axis = -1,keepdims = True),0.01)
+        NdotL = tf.maximum(tf.reduce_sum(N*L,axis = -1,keepdims = True),0.01)
 
         F = metallic+ tf.math.multiply((1 - metallic) , (1 - VdotH)**5)
         NDF = 1 / (PI*rough*pow(NdotH,4.0))*tf.exp((NdotH * NdotH - 1.0) / (rough * NdotH * NdotH))
         G = tf.minimum( 2*NdotH*NdotV/VdotH, 2*NdotH*NdotL/VdotH)
-        G = tf.minimum(tf.cast(1,dtype = tf.float32) , G)
+        G = tf.minimum(1.0 , G)
         nominator    = NDF* G * F 
-        denominator = 4 * NdotV * NdotL 
+        denominator = 4 * NdotV * NdotL +0.01
         specular = nominator / denominator
         
         #diffuse = (1-metallic)[:,:,None] * albedo / PI *NdotL[:,:,None] 
@@ -77,16 +77,18 @@ def GGXtf(maps):
         #reflection = tf.reshape(reflection,(256,256,1))
 
         #color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1
-        color = reflection + diffuse*1
+        color = reflection + diffuse
         return color#**(1/1.8)
 
     maps = tf.squeeze(maps)
     maps = (maps+1)/2
 
-    ran_seed = random.seed(dt.now())
-    light_xy = tf.random.uniform(shape=[2], maxval=1100, dtype=tf.float32, seed=ran_seed).numpy()
-    lightpos = tf.constant([light_xy[0],light_xy[1],1000],dtype = tf.float32)
-
+    #np.random.seed() # random takes long time
+    xy = np.random.randint(1100, size=2)
+    #ran_seed = random.seed(dt.now())
+    #light_xy = tf.random.uniform(shape=[2], maxval=1100, dtype=tf.float32, seed=ran_seed).numpy()
+    lightpos = tf.constant([xy[0],xy[1],1000],dtype = tf.float32)
+    #lightpos = tf.constant([1000,500,1000],dtype = tf.float32)
     viewpos  = tf.constant([143,143,288],dtype = tf.float32)
 
     albedomap, specularmap, normalinmap, roughnessmap = process(maps)
@@ -129,7 +131,7 @@ tf.compat.v1.enable_eager_execution()
 path = 'E:\workspace_ms_zhiyuan\DNNreimplement\Deschaintre\Dataset\inputExamples\example.png'
 photo, maps = imagestack(path)
 
-ran_seed = random.seed(datetime.now())
+ran_seed = random.seed(dt.now())
 tf.random.set_seed(ran_seed) 
 maps= tf.image.random_crop(maps, [256, 256, 9])
 

@@ -1,7 +1,7 @@
 
 import tensorflow as tf
 from svbrdf import SVBRDF,UNET_exact,UNET_1cnn  ,UNET_paper,UNET_paper2
-from svbrdf_reimplement import SVBRDF_debugged
+from svbrdf_reimplement import SVBRDF_debugged, SVBRDF_moments, SVBRDF_reducemean
 from DataGen import svbrdf_gen
 from GGXrenderer import rendering_loss,l1_loss,normalisation,l2_loss
 from tensorflow.keras.optimizers import Adam 
@@ -110,7 +110,7 @@ tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="E:\workspace_ms_z
 #tf.keras.backend.floatx()
 
 #os.environ['AUTOGRAPH_VERBOSITY'] = 5
-model = SVBRDF_debugged(9)
+model = SVBRDF_reducemean(9)
 learning_rate = 0.00002
 #model = UNET(9)
 #model.summary()
@@ -131,7 +131,7 @@ for photo, svbrdf in sample_ds.take(1):
 
 opt = Adam(lr=learning_rate)
 model.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 2000, epochs=20,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
+hitory = model.fit( ds,verbose =1 , steps_per_epoch = 200, epochs=20,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
 
 '''
 for photo, svbrdf in sample.take(num):
