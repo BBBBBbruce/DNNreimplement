@@ -6,6 +6,11 @@ import random
 NN_size = 256
 batch_size = 8
 
+def logrithm(img):
+    upper = tf.math.log(x+0.01)-tf.math.log(0.01)
+    lower = tf.math.log(1.01)  -tf.math.log(0.01)
+    return upper/lower
+
 def imagestack_img(img):
     shape = img.shape[0]
 
@@ -22,10 +27,10 @@ def imagestack_img(img):
 def parse_path(path):
     image_string = tf.io.read_file(path)
     #raw_input = tf.cast(tf.image.decode_image(image_string),tf.float32)
-    raw_input = tf.image.decode_image(image_string,dtype = tf.float32)
+    raw_input = tf.image.decode_image(image_string,dtype = tf.float32)#**(1/2.2)
     #tst = tf.ones((288,288*5,3),dtype = tf.float64)
 
-    return raw_input
+    return logrithm(raw_input)
 
 def img_process(raw):
     ins,outs = imagestack_img(raw)

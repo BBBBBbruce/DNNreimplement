@@ -49,7 +49,7 @@ def display_tb(photo,svbrdf):
     rough = tf.image.grayscale_to_rgb(rough)
 
     title = ['photo','albedo', 'specular', 'normal','roughness']
-    display_list=[photo, albedo, specular, N, rough]
+    display_list=[photo, albedo, specular**(1/1.8), N, rough]
 
     log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     file_writer = tf.summary.create_file_writer(log_dir)
@@ -64,8 +64,8 @@ def display_tb(photo,svbrdf):
 def show_predictions (dataset, model, num=1 ):
     for photo, svbrdf in dataset.take(num):
         pred_svbrdf= model.predict(photo)
-        display_tb(photo[0],svbrdf[0])
-        #display_tb(photo[0],pred_svbrdf[0])
+        #display_tb(photo[0],svbrdf[0])
+        display_tb(photo[0],pred_svbrdf[0])
 
 
 print(tf.__version__)
@@ -79,7 +79,7 @@ print(ds.element_spec)
 print('finish_loading')
 
 opt = Adam(lr=0.00002)
-new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_saved_1', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
+new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_svbrdf_1000', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
 #new_model.summary()
 new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['mse'])
 

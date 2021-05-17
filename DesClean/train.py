@@ -50,7 +50,7 @@ def display_tbs(svbrdf,epoch):
     rough = tf.image.grayscale_to_rgb(rough)
 
     title = ['albedo', 'specular', 'normal','roughness']
-    display_list=[ albedo, specular, N, rough]
+    display_list=[ albedo, specular**(1/2.2), N, rough]
 
     
     file_writer = tf.summary.create_file_writer(log_dir)
