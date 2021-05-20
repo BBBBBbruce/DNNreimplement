@@ -1,2 +1,2 @@
-timeout /t 10000
+timeout /t 8000
 python train.py

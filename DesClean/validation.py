@@ -14,7 +14,7 @@ print('finish_loading')
 
 
 opt = Adam(lr=0.00002)
-new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_svbrdf_1000', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
+new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_fully_11200', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
 #new_model.summary()
 new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['mse'])
 loss, acc = new_model.evaluate(ds, verbose=2,steps=10)

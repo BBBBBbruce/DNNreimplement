@@ -84,7 +84,7 @@ def GGXtf(maps):
     maps = (maps+1)/2
 
     np.random.seed() # random takes long time
-    xy = np.random.randint(1100, size=2)
+    xy = np.random.randint(288,10000, size=2)
     #ran_seed = random.seed(dt.now())
     #light_xy = tf.random.uniform(shape=[2], maxval=1100, dtype=tf.float32, seed=ran_seed).numpy()
     lightpos = tf.constant([xy[0],xy[1],1000],dtype = tf.float32)

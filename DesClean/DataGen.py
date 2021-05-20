@@ -7,7 +7,7 @@ NN_size = 256
 batch_size = 8
 
 def logrithm(img):
-    upper = tf.math.log(x+0.01)-tf.math.log(0.01)
+    upper = tf.math.log(img+0.01)-tf.math.log(0.01)
     lower = tf.math.log(1.01)  -tf.math.log(0.01)
     return upper/lower
 
@@ -22,7 +22,7 @@ def imagestack_img(img):
     rough   = img[:,shape*3:shape*4,0 ]
     rough = tf.expand_dims(rough,axis=-1)
 
-    return inputimg, tf.concat([albedo,specular,normal,rough],axis = -1)
+    return logrithm(inputimg), tf.concat([albedo,specular,normal,rough],axis = -1)
     
 def parse_path(path):
     image_string = tf.io.read_file(path)
@@ -30,7 +30,7 @@ def parse_path(path):
     raw_input = tf.image.decode_image(image_string,dtype = tf.float32)#**(1/2.2)
     #tst = tf.ones((288,288*5,3),dtype = tf.float64)
 
-    return logrithm(raw_input)
+    return raw_input
 
 def img_process(raw):
     ins,outs = imagestack_img(raw)
@@ -54,11 +54,11 @@ def tf_im_stack_map(raw):
 def parse_func(path):
     image_string = tf.io.read_file(path)
     raw_input = tf.image.decode_image(image_string,dtype = tf.float32)
-    raw_input = raw_input*2 - 1 
+    #raw_input = raw_input*2 - 1 
     ins, outs = tf.py_function(func = img_process, inp = [raw_input],Tout =(tf.float32,tf.float32) )
     ins.set_shape((256,256,3))
     outs.set_shape((256,256,9))
-    return ins,outs
+    return ins*2-1,outs*2-1
 
 def svbrdf_gen(path, bs):
     dataset = tf.data.Dataset.list_files(path+'\*.png')
@@ -68,7 +68,9 @@ def svbrdf_gen(path, bs):
     trainset = dataset.map(parse_func)
 
     trainset = trainset.repeat()
+    trainset = trainset.skip(11200)
     trainset = trainset.batch(bs)
+    #trainset = trainset.shuffle()
     return trainset
 
 

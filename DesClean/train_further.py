@@ -90,7 +90,7 @@ def display_tb(photo,svbrdf):
 def show_predictions ( epoch, num=1 ):
     for photo, svbrdf in sample_ds.take(num):
 
-        pred_svbrdf= model.predict(photo)
+        pred_svbrdf= new_model.predict(photo)
         #display(photo[0],svbrdf[0])
         #display_tb(photo[0],pred_svbrdf[0])
         #display_tbs(svbrdf[0],epoch)
@@ -102,48 +102,29 @@ class DisplayCallback(tf.keras.callbacks.Callback):
 
     #print ('\nSample Prediction after epoch {}\n'.format(epoch+1))
 
-  
 
-#file_writer = tf.summary.create_file_writer(logdir)
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="E:\workspace_ms_zhiyuan\\tensorboard_log\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), histogram_freq=1)
-
-#tf.keras.backend.floatx()
-
-#os.environ['AUTOGRAPH_VERBOSITY'] = 5
-model = SVBRDF_reducemean(9)
-learning_rate = 0.00002
-#model = UNET(9)
-#model.summary()
 
 sample = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\Train_smaller'
 train_path = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\trainBlended'
-#test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\testBlended'
+test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\testBlended'
 #test_path = 'D:\Y4\DNNreimplement\Deschaintre\Dataset\Train'
 print('load_data')
 ds = svbrdf_gen(train_path,8)
 sample_ds = svbrdf_gen(sample,8)
+test_ds = svbrdf_gen(test_path,8)
 print(ds.element_spec)
 print('finish_loading')
 
-for photo, svbrdf in sample_ds.take(1):
-
-        display_tbs(svbrdf[0],0)
-
-opt = Adam(lr=learning_rate)
-model.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 600, epochs=8,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
-
-'''
-for photo, svbrdf in sample.take(num):
-
-    pred_svbrdf= model.predict(photo)
-    display(photo[0],pred_svbrdf[0])
-'''
-#plt.plot(list(range(0, num_epochs)), hitory.history['loss'], label=' Loss',c='r',alpha=0.6)
-#plt.plot(list(range(0, num_epochs)), hitory.history['mse'], label=' mse',c='b',alpha=0.6)
-
-model.save('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_saved_1')
-#plt.show()
 
 
+opt = Adam(lr=0.00002)
+new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_fully_11200', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
+#new_model.summary()
+new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+hitory = new_model.fit( ds,verbose =1 , steps_per_epoch = 800, epochs=8,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
 
+
+loss, acc = new_model.evaluate(test_ds, verbose=2,steps=10)
+print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
+new_model.save('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_saved_further_1')
