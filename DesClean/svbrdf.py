@@ -490,4 +490,5 @@ def UNET_paper2(num_classes):
     model = keras.Model(inputs, outputs)
     return model
 
-
+#model = UNET_paper2(9)
+#model.summary()
