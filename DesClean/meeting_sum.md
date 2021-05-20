@@ -22,3 +22,25 @@ input range: I tried convert the image from 0-1 to -1-1 by multiplying 2 and -1.
 best mse is around 0.0018, but by seeing the prediction, it only predict the overall mean colour. The details are not preserved.
 
 
+
+
+
+current mse:
+current accuracy: 0.63
+current loss: 0.006
+
+bright square top left? not sure why(or does it exist in the prediction)
+
+next steps: 
+1. first try to use the hdr images
+   - should not be much of trouble with the hdr training data
+2. comparing with li and boss's network
+   - 
+3. building with 3D inputs
+   - 
+
+
+
+
+
+
