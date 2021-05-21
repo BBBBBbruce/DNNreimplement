@@ -1,7 +1,9 @@
 from tensorflow import keras
 import tensorflow as tf
 from tensorflow.keras import layers
+from tensorflow.python.keras.layers.advanced_activations import LeakyReLU
 
+# Unet version doulbe convs, svbrdf version single convs
 
 class GN_Mean(keras.layers.Layer):
     def __init__(self):
@@ -33,9 +35,9 @@ class Conv2d(keras.layers.Layer):
         convolution = self.selu(convolution)
         return convolution
 
-class EntryBlock(keras.layers.Layer):
+class EntryBlock_u(keras.layers.Layer):
     def __init__(self,fltr):
-        super(EntryBlock, self).__init__()
+        super(EntryBlock_u, self).__init__()
         self.fltr = fltr
         self.conv1 = Conv2d(self.fltr)
         self.conv2 = Conv2d(self.fltr)
@@ -45,9 +47,9 @@ class EntryBlock(keras.layers.Layer):
         encoder = self.conv2(encoder)
         return encoder
 
-class EncoderBlock(keras.layers.Layer):
+class EncoderBlock_u(keras.layers.Layer):
     def __init__(self,fltr):
-        super(EncoderBlock, self).__init__()
+        super(EncoderBlock_u, self).__init__()
         self.fltr = fltr
         self.maxpool = layers.MaxPooling2D(pool_size=(2, 2), padding="same")
         self.conv1 = Conv2d(self.fltr)
@@ -59,9 +61,9 @@ class EncoderBlock(keras.layers.Layer):
         encoder = self.conv2(encoder)
         return encoder
 
-class BottomBlock(keras.layers.Layer):
+class BottomBlock_u(keras.layers.Layer):
     def __init__(self,fltr):
-        super(BottomBlock, self).__init__()
+        super(BottomBlock_u, self).__init__()
         self.fltr = fltr
         self.maxpool = layers.MaxPooling2D(pool_size=(2, 2), padding="same")
         self.conv1 = Conv2d(self.fltr)
@@ -75,9 +77,9 @@ class BottomBlock(keras.layers.Layer):
         bottom = self.convT(bottom)
         return bottom
 
-class DecoderBlock(keras.layers.Layer):
+class DecoderBlock_u(keras.layers.Layer):
     def __init__(self,fltr,next_fltr):
-        super(DecoderBlock, self).__init__()
+        super(DecoderBlock_u, self).__init__()
         self.fltr = fltr
         self.next_fltr = next_fltr
         self.concat = layers.Concatenate()
@@ -92,9 +94,9 @@ class DecoderBlock(keras.layers.Layer):
         decoder = self.convT(decoder)
         return decoder
 
-class ExitBlock(keras.layers.Layer):
+class ExitBlock_u(keras.layers.Layer):
     def __init__(self,fltr):
-        super(ExitBlock, self).__init__()
+        super(ExitBlock_u, self).__init__()
         self.fltr = fltr
         self.concat = layers.Concatenate()
         self.conv1 = Conv2d(self.fltr)
@@ -106,24 +108,24 @@ class ExitBlock(keras.layers.Layer):
         decoder = self.conv2(decoder)
         return decoder
 
-class SingleBranch(keras.layers.Layer):
-    def __init__(self):
-        super(SingleBranch, self).__init__()
-        self.encode1 = EntryBlock(128)
-        self.encode2 = EncoderBlock(256)
-        self.encode3 = EncoderBlock(512)
-        self.encode4 = EncoderBlock(512)
-        self.encode5 = EncoderBlock(512)
-        self.encode6 = EncoderBlock(512)
-        self.encode7 = EncoderBlock(512)
-        self.bottom  = BottomBlock(512)
-        self.decode7 = DecoderBlock(512,512)
-        self.decode6 = DecoderBlock(512,512)
-        self.decode5 = DecoderBlock(512,512)
-        self.decode4 = DecoderBlock(512,512)
-        self.decode3 = DecoderBlock(512,256)
-        self.decode2 = DecoderBlock(256,128)
-        self.decode1 = ExitBlock(128)
+class SingleBranch_u(keras.layers.Layer):
+    def __init__(self,filters):
+        super(SingleBranch_u, self).__init__()
+        self.encode1 = EntryBlock_u(filters[0])
+        self.encode2 = EncoderBlock_u(filters[1])
+        self.encode3 = EncoderBlock_u(filters[2])
+        self.encode4 = EncoderBlock_u(filters[3])
+        self.encode5 = EncoderBlock_u(filters[4])
+        self.encode6 = EncoderBlock_u(filters[5])
+        self.encode7 = EncoderBlock_u(filters[6])
+        self.bottom  = BottomBlock_u(filters[7])
+        self.decode7 = DecoderBlock_u(filters[8],filters[9])
+        self.decode6 = DecoderBlock_u(filters[9],filters[10])
+        self.decode5 = DecoderBlock_u(filters[10],filters[11])
+        self.decode4 = DecoderBlock_u(filters[11],filters[12])
+        self.decode3 = DecoderBlock_u(filters[12],filters[13])
+        self.decode2 = DecoderBlock_u(filters[13],filters[14])
+        self.decode1 = ExitBlock_u(filters[14])
     def call(self, inputs):
         encoder1 = self.encode1(inputs)
         encoder2 = self.encode2(encoder1)
@@ -141,7 +143,4 @@ class SingleBranch(keras.layers.Layer):
         decoder2 = self.decode2([encoder2,decoder3])
         decoder1 = self.decode1([encoder1,decoder2])
         return decoder1
-
-
-
 

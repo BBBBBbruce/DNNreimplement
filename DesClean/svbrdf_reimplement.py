@@ -488,7 +488,7 @@ def SVBRDF_reducemean(num_classes):
 
 
     gf       = GN_Mean2()(inputs)
-    gf       = layers.Dense(256)(gf)
+    gf       = layers.Dense(128)(gf) # change to 128, however, not a bigger problem
     gf       = layers.Activation('selu')(gf)
     encoder1 = layers.Conv2D(filters = 128, kernel_size = 4, padding="same")(inputs)
     encoder1 = layers.BatchNormalization()(encoder1)
@@ -607,7 +607,7 @@ def SVBRDF_reducemean(num_classes):
     gfdown   = GN_Mean2()(decoder7)
     gfup     = layers.Dense(1024)(gf)
     gf       = layers.Concatenate()([gf,gfdown])
-    gf       = layers.Dense(1024)(gf)
+    gf       = layers.Dense(512)(gf)
     gf       = layers.Activation('selu')(gf)
     decoder7 = layers.Add()([decoder7,gfup])
     decoder7 = LeakyReLU()(decoder7)    
@@ -623,7 +623,7 @@ def SVBRDF_reducemean(num_classes):
     gfdown   = GN_Mean2()(decoder6)
     gfup     = layers.Dense(1024)(gf)
     gf       = layers.Concatenate()([gf,gfdown])
-    gf       = layers.Dense(1024)(gf)
+    gf       = layers.Dense(512)(gf)
     gf       = layers.Activation('selu')(gf)
     decoder6 = layers.Add()([decoder6,gfup])
     decoder6 = LeakyReLU()(decoder6)    
@@ -639,7 +639,7 @@ def SVBRDF_reducemean(num_classes):
     gfdown   = GN_Mean2()(decoder5)
     gfup     = layers.Dense(1024)(gf)
     gf       = layers.Concatenate()([gf,gfdown])
-    gf       = layers.Dense(1024)(gf)
+    gf       = layers.Dense(512)(gf)
     gf       = layers.Activation('selu')(gf)
     decoder5 = layers.Add()([decoder5,gfup])
     decoder5 = LeakyReLU()(decoder5) 
@@ -655,7 +655,7 @@ def SVBRDF_reducemean(num_classes):
     gfdown   = GN_Mean2()(decoder4)
     gfup     = layers.Dense(1024)(gf)
     gf       = layers.Concatenate()([gf,gfdown])
-    gf       = layers.Dense(1024)(gf)
+    gf       = layers.Dense(512)(gf)
     gf       = layers.Activation('selu')(gf)
     decoder4 = layers.Add()([decoder4,gfup])
     decoder4 = LeakyReLU()(decoder4) 
@@ -716,5 +716,5 @@ def SVBRDF_reducemean(num_classes):
     return model
 
 
-#model = SVBRDF_reducemean(9)
-#model.summary()
+model = SVBRDF_reducemean(9)
+model.summary()
