@@ -51,7 +51,7 @@ def display_tb(photo,svbrdf):
     title = ['photo','albedo', 'specular', 'normal','roughness']
     display_list=[photo, albedo, specular**(1/1.8), N, rough]
 
-    log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + "prediction"
     file_writer = tf.summary.create_file_writer(log_dir)
 
     with file_writer.as_default():
@@ -85,7 +85,7 @@ new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['mse'])
 
 
 
-show_predictions(ds,new_model,1)
+show_predictions(ds,new_model,10)
 
 
 

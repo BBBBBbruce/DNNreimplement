@@ -122,7 +122,7 @@ opt = Adam(lr=0.00002)
 new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_fully_11200', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
 #new_model.summary()
 new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
-hitory = new_model.fit( ds,verbose =1 , steps_per_epoch = 800, epochs=8,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
+hitory = new_model.fit( ds,verbose =1 , steps_per_epoch = 1000, epochs=8,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
 
 
 loss, acc = new_model.evaluate(test_ds, verbose=2,steps=10)

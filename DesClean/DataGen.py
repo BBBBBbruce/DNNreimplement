@@ -68,7 +68,7 @@ def svbrdf_gen(path, bs):
     trainset = dataset.map(parse_func)
 
     trainset = trainset.repeat()
-    trainset = trainset.skip(11200)
+    trainset = trainset.skip(4800*8)
     trainset = trainset.batch(bs)
     #trainset = trainset.shuffle()
     return trainset

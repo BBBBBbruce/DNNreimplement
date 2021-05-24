@@ -1,2 +1,2 @@
-timeout /t 8000
-python train.py
+timeout /t 1800
+python showprediction.py
