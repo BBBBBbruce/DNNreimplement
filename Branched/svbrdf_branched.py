@@ -28,18 +28,21 @@ def UNET_branched():
     model = keras.Model(inputs, outputs)
     return model
 
-model = UNET_branched()
-model.summary()
+
 def svbrdf_branched():
     inputs         = keras.Input(shape=(256,256) + (3,))
     filters = [128,256,512,512,512,512,512,512,512,512,512,512,512,256,128]
-    albedo         = SingleBranch_s(filters)(inputs)
+    #85,597,440
+    filter_1 = [32,64,128,128,128,128,256,256,256,128,128,128,128,64,32]
+    filter_2 = [64,128,128,256,256,256,256,256,256,256,256,256,128,128,64]
+    filter_3 = [64,128,128,128,128,256 ,512,512,512, 256,128,128,128,128,64]
+    albedo         = SingleBranch_s(filter_3)(inputs)
     albedo_out     = layers.Conv2D(3, kernel_size = 1, activation="tanh", padding="same")(albedo)
-    specular       = SingleBranch_s(filters)(inputs)
+    specular       = SingleBranch_s(filter_3)(inputs)
     specular_out   = layers.Conv2D(3, kernel_size = 1, activation="tanh", padding="same")(specular)
-    normal         = SingleBranch_s(filters)(inputs)
+    normal         = SingleBranch_s(filter_2)(inputs)
     normal_out     = layers.Conv2D(2, kernel_size = 1, activation="tanh", padding="same")(normal)
-    roughness      = SingleBranch_s(filters)(inputs)
+    roughness      = SingleBranch_s(filter_1)(inputs)
     roughness_out  = layers.Conv2D(1, kernel_size = 1, activation="tanh", padding="same")(roughness)
 
     outputs = layers.Concatenate()([albedo_out,specular_out,normal_out,roughness_out])
