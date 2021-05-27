@@ -124,6 +124,7 @@ train_path = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\trainBlended'
 print('load_data')
 ds = svbrdf_gen(train_path,8)
 sample_ds = svbrdf_gen(sample,8)
+test_ds = svbrdf_gen(train_path,8)
 print(ds.element_spec)
 print('finish_loading')
 
@@ -133,7 +134,7 @@ for photo, svbrdf in sample_ds.take(1):
 
 opt = Adam(lr=learning_rate)
 model.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 4000, epochs=8,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
+hitory = model.fit( ds,verbose =1 , steps_per_epoch = 200, epochs=8,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
 
 
 loss, acc = model.evaluate(test_ds, verbose=2,steps=10)

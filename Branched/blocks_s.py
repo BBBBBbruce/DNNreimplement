@@ -229,6 +229,7 @@ class SingleBranch_s(keras.layers.Layer):
         cfg = super().get_config()
         return cfg   
     def call(self, inputs):
+
         encoder1 = self.encode1(inputs)
         gf = self.gf1(inputs)
 
@@ -288,3 +289,5 @@ class SingleBranch_s(keras.layers.Layer):
         decoder1 = self.decode1(decoder1_entry,gf)
 
         return decoder1
+
+    
