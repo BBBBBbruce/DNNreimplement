@@ -7,6 +7,10 @@ bs = 8
 
 viewpos  = tf.constant([143,143,288],dtype = tf.float32)
 
+def normalisation(vec):
+    return vec/tf.norm(vec,axis = -1)[:,:,None]
+
+
 def padd1_fragepos():
     shapex = 256
     shapey = 256
@@ -21,6 +25,7 @@ def padd1_fragepos():
     return fragpos, padd1
 
 fragpos,padd1 = padd1_fragepos()
+V = normalisation(viewpos - fragpos)
 
 def l1_loss(mgt, mif):
     return tf.reduce_mean(tf.abs(mgt-mif))
@@ -64,7 +69,6 @@ def GGXtf(maps):
         denominator = 4 * NdotV * NdotL +0.01
         specular = nominator / denominator
         
-
         diffuse = (1-metallic) * albedo / PI *NdotL
 
         reflection = specular * NdotL*1.5 #* radiance 
@@ -83,7 +87,6 @@ def GGXtf(maps):
     albedomap, specularmap, normalinmap, roughnessmap = process(maps)
     
     N = normalisation(tf.concat([normalinmap,padd1],axis = -1))
-    V = normalisation(viewpos - fragpos)
     L = normalisation(lightpos - fragpos)
 
     imgout = GGXpxl(V ,L , N, albedomap,specularmap,roughnessmap)

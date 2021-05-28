@@ -7,7 +7,7 @@ NN_size = 256
 batch_size = 8
 
 def logrithm(img):
-    return tf.math.log(100*img + 1)/tf.math.log(101)  
+    return tf.math.log(100.*img + 1.)/tf.math.log(101.)  
 
 def imagestack_img(img):
     shape = img.shape[0]
