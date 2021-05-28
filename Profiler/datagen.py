@@ -20,27 +20,25 @@ def imagestack_img(img):
     rough   = img[:,shape*3:shape*4,0 ]
     rough = tf.expand_dims(rough,axis=-1)
 
-    return logrithm(inputimg), tf.concat([albedo,specular,normal,rough],axis = -1)
+    return tf.concat([logrithm(inputimg), albedo,specular,normal,rough],axis = -1)
 
 
 def img_process(raw):
-    ins,outs = imagestack_img(raw)
+    img_stack = imagestack_img(raw)
     ran_seed = random.seed(datetime.now())
     tf.random.set_seed(ran_seed)
-    inputs = tf.image.random_crop(ins,  [NN_size, NN_size, 3])
-    tf.random.set_seed(ran_seed) 
-    outputs= tf.image.random_crop(outs, [NN_size, NN_size, 9])
-   
-    return inputs, outputs
+    img_stack = tf.image.random_crop(img_stack,  [NN_size, NN_size, 12])
+    img_stack = img_stack*2-1
+    return img_stack[:,:,0:3], img_stack[:,:,3:12]
 
 
 def parse_func(path):
     image_string = tf.io.read_file(path)
     raw_input = tf.image.decode_image(image_string,dtype = tf.float32)
     ins, outs = tf.py_function(func = img_process, inp = [raw_input],Tout =(tf.float32,tf.float32) )
-    ins.set_shape((256,256,3))
-    outs.set_shape((256,256,9))
-    return ins*2-1,outs*2-1
+    #ins.set_shape((256,256,3))
+    #outs.set_shape((256,256,9))
+    return ins,outs
 
 def svbrdf_gen(path, bs):
     dataset = tf.data.Dataset.list_files(path+'\*.png')

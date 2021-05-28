@@ -3,7 +3,6 @@ from net import SVBRDF_debugged
 from datagen import svbrdf_gen
 from loss import rendering_loss
 from tensorflow.keras.optimizers import Adam 
-import numpy as np
 import datetime
 num_epochs = 20
 
