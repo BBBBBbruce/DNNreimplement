@@ -2,10 +2,11 @@ from tensorflow import keras
 import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.python.keras.layers.advanced_activations import LeakyReLU
+import time
 
 def SVBRDF_debugged(num_classes):
+    st = time.time()
     inputs = keras.Input(shape=(256,256) + (3,))
-
 
     gf       = layers.AveragePooling2D(inputs.shape[1],inputs.shape[1])(inputs)
     gf       = layers.Dense(256)(gf)
@@ -233,6 +234,8 @@ def SVBRDF_debugged(num_classes):
     outputs = layers.Conv2D(num_classes, kernel_size = 1, activation="tanh", padding="same")(decoder1)
 
     model = keras.Model(inputs, outputs)
+    
+    print('finish rendering, using '+str(time.time()-st)+' seconds')
     return model
 
 class GN_Mean(keras.layers.Layer):
