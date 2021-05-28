@@ -26,7 +26,7 @@ print('finish_loading')
 
 opt = Adam(lr=learning_rate)
 model.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 2000, epochs=8,callbacks=[tensorboard_callback]) #24884 DisplayCallback()
+hitory = model.fit( ds,verbose =1 , steps_per_epoch = 15000, epochs=8,callbacks=[tensorboard_callback]) #24884 DisplayCallback()
 
 oss, acc = model.evaluate(test_ds, verbose=2,steps=10)
 print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))

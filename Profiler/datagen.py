@@ -36,8 +36,8 @@ def parse_func(path):
     image_string = tf.io.read_file(path)
     raw_input = tf.image.decode_image(image_string,dtype = tf.float32)
     ins, outs = tf.py_function(func = img_process, inp = [raw_input],Tout =(tf.float32,tf.float32) )
-    #ins.set_shape((256,256,3))
-    #outs.set_shape((256,256,9))
+    ins.set_shape((256,256,3))
+    outs.set_shape((256,256,9))
     return ins,outs
 
 def svbrdf_gen(path, bs):
