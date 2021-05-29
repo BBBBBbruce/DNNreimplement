@@ -3,7 +3,44 @@ import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.python.keras.layers.advanced_activations import LeakyReLU
 
-from blocks import Conv2d,GN_Mean2
+
+class GN_Mean2(keras.layers.Layer):
+    def __init__(self):
+        super(GN_Mean2, self).__init__()
+
+    def call(self, inputs):
+        mean = tf.math.reduce_mean(inputs, axis=[1, 2], keepdims=False)
+        return mean
+
+    def get_config(self):
+        cfg = super().get_config()
+        return cfg   
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+class Conv2d(keras.layers.Layer):
+    def __init__(self,fltr):
+        super(Conv2d, self).__init__()
+        self.fltr = fltr
+        self.conv = layers.Conv2D(filters = self.fltr, kernel_size = 4, padding="same")
+        self.bn = layers.BatchNormalization()
+        self.selu = layers.Activation("selu")
+
+    def call(self, inputs):
+        convolution = self.conv(inputs)
+        convolution = self.bn(convolution)
+        convolution = self.selu(convolution)
+        return convolution
+
+    def get_config(self):
+        return {"fltr": self.fltr}
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 
 class EntryBlock_s_conv(keras.layers.Layer):
@@ -12,13 +49,17 @@ class EntryBlock_s_conv(keras.layers.Layer):
         self.fltr = fltr
         self.conv = Conv2d(self.fltr)
 
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg   
-
     def call(self, inputs):
         encoder = self.conv(inputs)
         return encoder
+
+    def get_config(self):
+        return {"fltr": self.fltr}
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 class EntryBlock_s_gf(keras.layers.Layer):
     def __init__(self,fltr):
@@ -28,15 +69,18 @@ class EntryBlock_s_gf(keras.layers.Layer):
         self.fc = layers.Dense(self.fltr)
         self.selu = layers.Activation('selu')
     
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg   
-
     def call(self, inputs):
         gf = self.mean(inputs)
         gf = self.fc(gf)
         gf = self.selu(gf)
         return gf
+
+    def get_config(self):
+        return {"fltr": self.fltr}
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 class EncoderBlock_s_conv(keras.layers.Layer):
     def __init__(self,fltr,fltr_pre):
@@ -48,16 +92,19 @@ class EncoderBlock_s_conv(keras.layers.Layer):
         self.lrelu = LeakyReLU()
         self.conv = Conv2d(self.fltr)
 
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg   
-
     def call(self, encoder, gf):
         gf = self.fc(gf)
         encoder = self.add([encoder,gf])
         encoder = self.lrelu(encoder)
         encoder = self.conv(encoder)
         return encoder
+
+    def get_config(self):
+        return {"fltr": self.fltr,"fltr_pre": self.fltr_pre }
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 class EncoderBlock_s_gf(keras.layers.Layer):
     def __init__(self,fltr):
@@ -68,16 +115,20 @@ class EncoderBlock_s_gf(keras.layers.Layer):
         self.fc = layers.Dense(self.fltr)
         self.selu = layers.Activation('selu')
 
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg   
-
     def call(self, encoder_current, gf):
         mean = self.mean(encoder_current)
         gf = self.concat([gf,mean])
         gf = self.fc(gf)
         gf = self.selu(gf)
         return gf
+
+    def get_config(self):
+        return {"fltr": self.fltr}
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 class BottomBlock_s_conv(keras.layers.Layer):
     def __init__(self,fltr,fltr_pre):
@@ -90,10 +141,7 @@ class BottomBlock_s_conv(keras.layers.Layer):
         self.lrelu = LeakyReLU()
         self.conv = Conv2d(self.fltr)
         self.convT = layers.Conv2DTranspose(filters = self.fltr,kernel_size=2,strides = 2, padding= "same")
-      
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg          
+            
     def call(self, bottom, gf):
         gf = self.fc(gf)
         bottom = self.add([bottom,gf])
@@ -103,6 +151,14 @@ class BottomBlock_s_conv(keras.layers.Layer):
 
         return bottom
 
+    def get_config(self):
+        return {"fltr": self.fltr,"fltr_pre": self.fltr_pre }
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
 class BottomBlock_s_gf(keras.layers.Layer):
     def __init__(self,fltr):
         super(BottomBlock_s_gf, self).__init__()
@@ -111,15 +167,20 @@ class BottomBlock_s_gf(keras.layers.Layer):
         self.concat = layers.Concatenate()
         self.fc = layers.Dense(self.fltr)
         self.selu = layers.Activation('selu')
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg   
+
     def call(self, encoder_current, gf):
         mean = self.mean(encoder_current)
         gf = self.concat([gf,mean])
         gf = self.fc(gf)
         gf = self.selu(gf)
         return gf
+
+    def get_config(self):
+        return {"fltr": self.fltr}
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 class DecoderBlock_s_conv(keras.layers.Layer):
     def __init__(self,fltr,fltr_next):
@@ -131,9 +192,7 @@ class DecoderBlock_s_conv(keras.layers.Layer):
         self.lrelu = LeakyReLU()
         self.conv = Conv2d(self.fltr)
         self.convT = layers.Conv2DTranspose(filters = self.fltr_next,kernel_size=2,strides = 2, padding= "same")
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg   
+
     def call(self, decoder, gf):
         gf = self.fc(gf)
         decoder = self.add([decoder,gf])
@@ -141,6 +200,14 @@ class DecoderBlock_s_conv(keras.layers.Layer):
         decoder = self.conv(decoder)
         decoder = self.convT(decoder)
         return decoder
+
+    def get_config(self):
+        return {"fltr": self.fltr,"fltr_next": self.fltr_next }
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 class DecoderBlock_s_gf(keras.layers.Layer):
     def __init__(self,fltr):
@@ -150,15 +217,20 @@ class DecoderBlock_s_gf(keras.layers.Layer):
         self.concat = layers.Concatenate()
         self.fc = layers.Dense(self.fltr)
         self.selu = layers.Activation('selu')
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg   
+
     def call(self, encoder_current, gf):
         mean = self.mean(encoder_current)
         gf = self.concat([gf,mean])
         gf = self.fc(gf)
         gf = self.selu(gf)
         return gf
+    
+    def get_config(self):
+        return {"fltr": self.fltr }
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 class ExitBlock_s_conv(keras.layers.Layer):
     def __init__(self,fltr):
@@ -169,9 +241,7 @@ class ExitBlock_s_conv(keras.layers.Layer):
         self.lrelu = LeakyReLU()
         self.conv = Conv2d(self.fltr)
         self.convT = layers.Conv2DTranspose(filters = self.fltr,kernel_size=2,strides = 2, padding= "same")
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg   
+
     def call(self, decoder, gf):
         gf = self.fc(gf)
         decoder = self.add([decoder,gf])
@@ -179,9 +249,17 @@ class ExitBlock_s_conv(keras.layers.Layer):
         decoder = self.conv(decoder)
         return decoder
 
+    def get_config(self):
+        return {"fltr": self.fltr}
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 class SingleBranch_s(keras.layers.Layer):
     def __init__(self,filters):
         super(SingleBranch_s, self).__init__()
+        self.filters = filters
         self.maxpool1 = layers.MaxPooling2D(pool_size=(2, 2), padding="same")
         self.maxpool2 = layers.MaxPooling2D(pool_size=(2, 2), padding="same")
         self.maxpool3 = layers.MaxPooling2D(pool_size=(2, 2), padding="same")
@@ -196,38 +274,36 @@ class SingleBranch_s(keras.layers.Layer):
         self.concat5 = layers.Concatenate()
         self.concat6 = layers.Concatenate()
         self.concat7 = layers.Concatenate()
-        self.encode1 = EntryBlock_s_conv(filters[0])
-        self.gf1     = EntryBlock_s_gf(filters[0]) 
-        self.encode2 = EncoderBlock_s_conv(filters[1],filters[0])
-        self.gf2     = EncoderBlock_s_gf(filters[1])
-        self.encode3 = EncoderBlock_s_conv(filters[2],filters[1])
-        self.gf3     = EncoderBlock_s_gf(filters[2])
-        self.encode4 = EncoderBlock_s_conv(filters[3],filters[2])
-        self.gf4     = EncoderBlock_s_gf(filters[3])
-        self.encode5 = EncoderBlock_s_conv(filters[4],filters[3])
-        self.gf5     = EncoderBlock_s_gf(filters[4])
-        self.encode6 = EncoderBlock_s_conv(filters[5],filters[4])
-        self.gf6     = EncoderBlock_s_gf(filters[5])
-        self.encode7 = EncoderBlock_s_conv(filters[6],filters[5])
-        self.gf7     = EncoderBlock_s_gf(filters[6])
-        self.bottom  = BottomBlock_s_conv(filters[7],filters[6])
-        self.gf_btm  = BottomBlock_s_gf(filters[7])
-        self.decode7 = DecoderBlock_s_conv(filters[8],filters[9])
-        self.gf_7    = DecoderBlock_s_gf(filters[8])
-        self.decode6 = DecoderBlock_s_conv(filters[9],filters[10])
-        self.gf_6    = DecoderBlock_s_gf(filters[9])
-        self.decode5 = DecoderBlock_s_conv(filters[10],filters[11])
-        self.gf_5    = DecoderBlock_s_gf(filters[10])
-        self.decode4 = DecoderBlock_s_conv(filters[11],filters[12])
-        self.gf_4    = DecoderBlock_s_gf(filters[11])
-        self.decode3 = DecoderBlock_s_conv(filters[12],filters[13])
-        self.gf_3    = DecoderBlock_s_gf(filters[12])
-        self.decode2 = DecoderBlock_s_conv(filters[13],filters[14])
-        self.gf_2    = DecoderBlock_s_gf(filters[13])
-        self.decode1 = ExitBlock_s_conv(filters[14])
-    def get_config(self):
-        cfg = super().get_config()
-        return cfg   
+        self.encode1 = EntryBlock_s_conv(self.filters[0])
+        self.gf1     = EntryBlock_s_gf(self.filters[0]) 
+        self.encode2 = EncoderBlock_s_conv(self.filters[1],self.filters[0])
+        self.gf2     = EncoderBlock_s_gf(self.filters[1])
+        self.encode3 = EncoderBlock_s_conv(self.filters[2],self.filters[1])
+        self.gf3     = EncoderBlock_s_gf(self.filters[2])
+        self.encode4 = EncoderBlock_s_conv(self.filters[3],self.filters[2])
+        self.gf4     = EncoderBlock_s_gf(self.filters[3])
+        self.encode5 = EncoderBlock_s_conv(self.filters[4],self.filters[3])
+        self.gf5     = EncoderBlock_s_gf(self.filters[4])
+        self.encode6 = EncoderBlock_s_conv(self.filters[5],self.filters[4])
+        self.gf6     = EncoderBlock_s_gf(self.filters[5])
+        self.encode7 = EncoderBlock_s_conv(self.filters[6],self.filters[5])
+        self.gf7     = EncoderBlock_s_gf(self.filters[6])
+        self.bottom  = BottomBlock_s_conv(self.filters[7],self.filters[6])
+        self.gf_btm  = BottomBlock_s_gf(self.filters[7])
+        self.decode7 = DecoderBlock_s_conv(self.filters[8],self.filters[9])
+        self.gf_7    = DecoderBlock_s_gf(self.filters[8])
+        self.decode6 = DecoderBlock_s_conv(self.filters[9],self.filters[10])
+        self.gf_6    = DecoderBlock_s_gf(self.filters[9])
+        self.decode5 = DecoderBlock_s_conv(self.filters[10],self.filters[11])
+        self.gf_5    = DecoderBlock_s_gf(self.filters[10])
+        self.decode4 = DecoderBlock_s_conv(self.filters[11],self.filters[12])
+        self.gf_4    = DecoderBlock_s_gf(self.filters[11])
+        self.decode3 = DecoderBlock_s_conv(self.filters[12],self.filters[13])
+        self.gf_3    = DecoderBlock_s_gf(self.filters[12])
+        self.decode2 = DecoderBlock_s_conv(self.filters[13],self.filters[14])
+        self.gf_2    = DecoderBlock_s_gf(self.filters[13])
+        self.decode1 = ExitBlock_s_conv(self.filters[14])
+
     def call(self, inputs):
 
         encoder1 = self.encode1(inputs)
@@ -290,4 +366,9 @@ class SingleBranch_s(keras.layers.Layer):
 
         return decoder1
 
+    def get_config(self):
+        return {"filters": self.filters }
     
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)

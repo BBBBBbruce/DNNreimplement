@@ -41,7 +41,7 @@ def parse_func(path):
     return ins,outs
 
 def svbrdf_gen(path, bs):
-    dataset = tf.data.Dataset.list_files(path+'\*.png')
+    dataset = tf.data.Dataset.list_files(path+'/*.png')
     trainset = dataset.map(parse_func)
     trainset = trainset.repeat()
     #trainset = trainset.skip()

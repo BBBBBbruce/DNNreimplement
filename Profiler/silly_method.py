@@ -2,12 +2,21 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.python.keras.layers.advanced_activations import LeakyReLU
 
+filter_1 = [32,64,128,128,128,128,256,256,256,128,128,128,128,64,32]
+filter_2 = [64,128,128,256,256,256,256,256,256,256,256,256,128,128,64]
+filter_3 = [64,128,128,128,128,256 ,512,512,512, 256,128,128,128,128,64]
 
 def SVBRDF_debugged(num_classes):
     inputs = keras.Input(shape=(256,256) + (3,))
 
+### just write the complete network, long code, but works. 
+### keras subclassing is trash.
+### trainable but cannot be loaded.
+
+### albedo
+
     gf       = layers.AveragePooling2D(inputs.shape[1],inputs.shape[1])(inputs)
-    gf       = layers.Dense(128)(gf)
+    gf       = layers.Dense(256)(gf)
     gf       = layers.Activation('selu')(gf)
     encoder1 = layers.Conv2D(filters = 128, kernel_size = 4, padding="same")(inputs)
     encoder1 = layers.BatchNormalization()(encoder1)
@@ -102,7 +111,7 @@ def SVBRDF_debugged(num_classes):
     gfdown   = layers.AveragePooling2D(decoder7.shape[1],decoder7.shape[1])(decoder7)
     gfup     = layers.Dense(1024)(gf)
     gf       = layers.Concatenate()([gf,gfdown])
-    gf       = layers.Dense(512)(gf)
+    gf       = layers.Dense(1024)(gf)
     gf       = layers.Activation('selu')(gf)
     decoder7 = layers.Add()([decoder7,gfup])
     decoder7 = LeakyReLU()(decoder7)    
@@ -115,7 +124,7 @@ def SVBRDF_debugged(num_classes):
     gfdown   = layers.AveragePooling2D(decoder6.shape[1],decoder6.shape[1])(decoder6)
     gfup     = layers.Dense(1024)(gf)
     gf       = layers.Concatenate()([gf,gfdown])
-    gf       = layers.Dense(512)(gf)
+    gf       = layers.Dense(1024)(gf)
     gf       = layers.Activation('selu')(gf)
     decoder6 = layers.Add()([decoder6,gfup])
     decoder6 = LeakyReLU()(decoder6)    
@@ -128,7 +137,7 @@ def SVBRDF_debugged(num_classes):
     gfdown   = layers.AveragePooling2D(decoder5.shape[1],decoder5.shape[1])(decoder5)
     gfup     = layers.Dense(1024)(gf)
     gf       = layers.Concatenate()([gf,gfdown])
-    gf       = layers.Dense(512)(gf)
+    gf       = layers.Dense(1024)(gf)
     gf       = layers.Activation('selu')(gf)
     decoder5 = layers.Add()([decoder5,gfup])
     decoder5 = LeakyReLU()(decoder5) 
@@ -141,7 +150,7 @@ def SVBRDF_debugged(num_classes):
     gfdown   = layers.AveragePooling2D(decoder4.shape[1],decoder4.shape[1])(decoder4)
     gfup     = layers.Dense(1024)(gf)
     gf       = layers.Concatenate()([gf,gfdown])
-    gf       = layers.Dense(512)(gf)
+    gf       = layers.Dense(1024)(gf)
     gf       = layers.Activation('selu')(gf)
     decoder4 = layers.Add()([decoder4,gfup])
     decoder4 = LeakyReLU()(decoder4) 
