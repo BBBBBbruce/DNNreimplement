@@ -1,155 +1,111 @@
-
 import tensorflow as tf
-#from svbrdf import SVBRDF,UNET_exact,UNET_1cnn  ,UNET_paper,UNET_paper2
-#from svbrdf_reimplement import SVBRDF_debugged, SVBRDF_moments, SVBRDF_reducemean
-from DataGen import svbrdf_gen
-from GGXrenderer import rendering_loss,l1_loss,normalisation,l2_loss
 from tensorflow.keras.optimizers import Adam 
-import matplotlib.pyplot as plt
-import numpy as np
 import datetime
-from svbrdf_branched import svbrdf_branched
+import sys
+
+from splited_net import net_split
+from loss import rendering_loss
+from datagen_split import svbrdf_gen
+
+
 num_epochs = 20
 
-log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+opt = Adam(lr=0.00002)
+step_num = 2
+epoch_num = 2
+#sample = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\Train_smaller'
+train_path = '/vol/bitbucket/zz6117/Data_Deschaintre18/trainBlended'
+test_path =  '/vol/bitbucket/zz6117/Data_Deschaintre18/testBlended'
+filter_1 = [32,64,128,128,128,128,256,256,256,128,128,128,128,64,32]
+filter_2 = [64,128,128,256,256,256,256,256,256,256,256,256,128,128,64]
+filter_3 = [64,128,128,128,128,256 ,512,512,512, 256,128,128,128,128,64]
 
-def display(photo, svbrdf):
+def train_split(mode = 'all'):
+    if (mode == 'a'):
+        print('***************** TRAINING ALBEDO NET ************************')
+        model_a = net_split(filter_3,3)
+
+        print('load_data')
+        ds = svbrdf_gen(train_path,8,'a')
+        test_ds = svbrdf_gen(test_path,8,'a')
+        print('finish_loading')
+
+        model_a.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+        hitory = model_a.fit( ds,verbose =1 , steps_per_epoch = step_num, epochs=epoch_num)#,callbacks=[tensorboard_callback]) #24884 DisplayCallback()
+
+        model_a.save('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_alebdo_1')
+        new_model_a = tf.keras.models.load_model('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_alebdo_1', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
+
+        new_model_a.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+        oss, acc = new_model_a.evaluate(test_ds, verbose=2,steps=10)
+        print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
+        
+    elif (mode == 's'):
+        print('***************** TRAINING SPECULAR NET ************************')
+        model_s = net_split(filter_3,3)
+
+        print('load_data')
+        ds = svbrdf_gen(test_path,8,'s')
+        test_ds = svbrdf_gen(test_path,8,'s')
+        print('finish_loading')
+
+        model_s.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+        hitory = model_s.fit( ds,verbose =1 , steps_per_epoch = step_num, epochs=epoch_num)#,callbacks=[tensorboard_callback]) #24884 DisplayCallback()
+
+        model_s.save('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_specular_1')
+        new_model_s = tf.keras.models.load_model('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_specular_1', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
+
+        new_model_s.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+        oss, acc = new_model_s.evaluate(test_ds, verbose=2,steps=10)
+        print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
     
-    def process(maps):
-        return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
+    elif (mode == 'n'):
+        print('***************** TRAINING NORMAL NET ************************')
+        model_n = net_split(filter_2,2)
 
-    albedo, specular, normal, rough = process(svbrdf)
+        print('load_data')
+        ds = svbrdf_gen(test_path,8,'n')
+        test_ds = svbrdf_gen(test_path,8,'n')
+        print('finish_loading')
 
-    rough = tf.expand_dims(rough,axis=-1)
+        model_n.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+        hitory = model_n.fit( ds,verbose =1 , steps_per_epoch = step_num, epochs=epoch_num)#,callbacks=[tensorboard_callback]) #24884 DisplayCallback()
 
-    padd1 = tf.ones ([256,256,1],dtype = tf.float32)
+        model_n.save('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_normal_1')
+        new_model_n = tf.keras.models.load_model('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_normal_1', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
 
-    N = tf.concat([normal,padd1],axis = -1)
-
-    title = ['photo','albedo', 'specular', 'normal','roughness']
-    display_list=[photo, albedo, specular, N, rough]
-    for i in range(len(display_list)):
-        plt.subplot(1, len(display_list), i+1)
-        plt.title(title[i])
-        plt.imshow(display_list[i])
-        plt.axis('off')
-    plt.show()
-
-def display_tbs(svbrdf,epoch):
-    svbrdf = (svbrdf+1)/2
-    def process(maps):
-        return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
-
-    albedo, specular, normal, rough = process(svbrdf)
-
-    rough = tf.expand_dims(rough,axis=-1)
-
-    padd1 = tf.ones ([256,256,1],dtype = tf.float32)
-
-    N = tf.concat([normal,padd1],axis = -1)
-
-    rough = tf.image.grayscale_to_rgb(rough)
-
-    title = ['albedo', 'specular', 'normal','roughness']
-    display_list=[ albedo, specular**(1/2.2), N, rough]
-
+        new_model_n.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+        oss, acc = new_model_n.evaluate(test_ds, verbose=2,steps=10)
+        print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
     
-    file_writer = tf.summary.create_file_writer(log_dir)
+    elif (mode == 'r'):
+        print('***************** TRAINING ROUGHNESS NET ************************')
+        model_r = net_split(filter_1,1)
 
-    with file_writer.as_default():
-        # Don't forget to reshape.
-        images = np.reshape(display_list, (-1, 256, 256, 3))
-        tf.summary.image("svbrdf", images,max_outputs=5,step=epoch)
+        print('load_data')
+        ds = svbrdf_gen(test_path,8,'r')
+        test_ds = svbrdf_gen(test_path,8,'r')
+        print('finish_loading')
 
-def display_tb(photo,svbrdf):
-    photo = (photo+1)/2
-    svbrdf = (svbrdf+1)/2
-    def process(maps):
-        return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
+        model_r.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+        hitory = model_r.fit( ds,verbose =1 , steps_per_epoch = step_num, epochs=epoch_num)#,callbacks=[tensorboard_callback]) #24884 DisplayCallback()
 
-    albedo, specular, normal, rough = process(svbrdf)
+        model_r.save('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_roughness_1')
+        new_model_r = tf.keras.models.load_model('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_roughness_1', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
 
-    rough = tf.expand_dims(rough,axis=-1)
+        new_model_r.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
+        oss, acc = new_model_r.evaluate(test_ds, verbose=2,steps=10)
+        print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
 
-    padd1 = tf.ones ([256,256,1],dtype = tf.float32)
+    elif (mode == 'all'):
+        print('***************** SEQUENTIALLY TRAINING ALL NETS ************************')
+        train_split('a')
+        train_split('s')
+        train_split('n')
+        train_split('r')
 
-    N = tf.concat([normal,padd1],axis = -1)
+    else:
+        print('dude, wtf is this')
 
-    rough = tf.image.grayscale_to_rgb(rough)
-
-    title = ['photo','albedo', 'specular', 'normal','roughness']
-    display_list=[photo, albedo, specular, N, rough]
-
-    log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    file_writer = tf.summary.create_file_writer(log_dir)
-
-    with file_writer.as_default():
-        # Don't forget to reshape.
-        images = np.reshape(display_list, (-1, 256, 256, 3))
-        tf.summary.image("svbrdf", images,max_outputs=5,step=0)
-
-def show_predictions ( epoch, num=1 ):
-    for photo, svbrdf in sample_ds.take(num):
-
-        pred_svbrdf= model.predict(photo)
-        #display(photo[0],svbrdf[0])
-        #display_tb(photo[0],pred_svbrdf[0])
-        #display_tbs(svbrdf[0],epoch)
-        display_tbs(pred_svbrdf[0],epoch+1)
-
-class DisplayCallback(tf.keras.callbacks.Callback):
-  def on_epoch_end(self, epoch, logs=None):
-    show_predictions(epoch)
-
-    #print ('\nSample Prediction after epoch {}\n'.format(epoch+1))
-
-  
-
-#file_writer = tf.summary.create_file_writer(logdir)
-tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="E:\workspace_ms_zhiyuan\\tensorboard_log\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), histogram_freq=1)
-
-#tf.keras.backend.floatx()
-
-#os.environ['AUTOGRAPH_VERBOSITY'] = 5
-#model = SVBRDF_reducemean(9)
-model = svbrdf_branched()
-learning_rate = 0.00002
-#model = UNET(9)
-#model.summary()
-
-sample = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\Train_smaller'
-train_path = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\trainBlended'
-test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\testBlended'
-#test_path = 'D:\Y4\DNNreimplement\Deschaintre\Dataset\Train'
-print('load_data')
-ds = svbrdf_gen(train_path,8)
-sample_ds = svbrdf_gen(sample,8)
-test_ds = svbrdf_gen(test_path,8)
-print(ds.element_spec)
-print('finish_loading')
-
-for photo, svbrdf in sample_ds.take(1):
-
-        display_tbs(svbrdf[0],0)
-
-opt = Adam(lr=learning_rate)
-model.compile(optimizer = opt, loss =rendering_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 20, epochs=8,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback()
-
-
-loss, acc = model.evaluate(test_ds, verbose=2,steps=10)
-print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
-'''
-for photo, svbrdf in sample.take(num):
-
-    pred_svbrdf= model.predict(photo)
-    display(photo[0],pred_svbrdf[0])
-'''
-#plt.plot(list(range(0, num_epochs)), hitory.history['loss'], label=' Loss',c='r',alpha=0.6)
-#plt.plot(list(range(0, num_epochs)), hitory.history['mse'], label=' mse',c='b',alpha=0.6)
-
-model.save('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_saved_1')
-#plt.show()
-
-
-
+#print(sys.argv[1])
+train_split(sys.argv[1])

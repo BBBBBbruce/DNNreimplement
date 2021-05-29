@@ -61,7 +61,7 @@ def parse_func(path):
     return ins*2-1,outs*2-1
 
 def svbrdf_gen(path, bs):
-    dataset = tf.data.Dataset.list_files(path+'\*.png')
+    dataset = tf.data.Dataset.list_files(path+'/*.png')
 
     #image_ds = dataset.map(parse_path)
     #trainset = image_ds.map(tf_im_stack_map)
