@@ -27,9 +27,9 @@ def img_process(raw):
     img_stack = imagestack_img(raw)
     ran_seed = random.seed(datetime.now())
     tf.random.set_seed(ran_seed)
-    img_stack = tf.image.random_crop(img_stack,  [NN_size, NN_size, 12])
+    img_stack = tf.image.random_crop(img_stack,  [NN_size, NN_size, img_stack.shape[2]])
     img_stack = img_stack*2-1
-    return img_stack[:,:,0:3], img_stack[:,:,3:12]
+    return img_stack[:,:,0:3], img_stack[:,:,3:]
 
 
 def parse_func(path):
