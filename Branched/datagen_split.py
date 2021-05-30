@@ -6,6 +6,13 @@ import random
 NN_size = 256
 batch_size = 8
 
+dic = {
+    'a' : 3,
+    's' : 3,
+    'n' : 2,
+    'r' : 1
+}
+
 def logrithm(img):
     return tf.math.log(100.*img + 1.)/tf.math.log(101.)  
 
@@ -40,14 +47,14 @@ def img_process(raw,mode):
 def parse_func(path,mode):
     image_string = tf.io.read_file(path)
     raw_input = tf.image.decode_image(image_string,dtype = tf.float32)
-    ins, outs = tf.py_function(func = img_process(mode), inp = [raw_input],Tout =(tf.float32,tf.float32) )
+    ins, outs = tf.py_function(func = img_process, inp = [raw_input,mode],Tout =(tf.float32,tf.float32) )
     ins.set_shape((256,256,3))
-    outs.set_shape((256,256,9))
+    outs.set_shape((256,256,dic[mode]))
     return ins,outs
 
 def svbrdf_gen(path, bs, mode):
     dataset = tf.data.Dataset.list_files(path+'/*.png')
-    trainset = dataset.map(parse_func(mode))
+    trainset = dataset.map(lambda p: parse_func(p, mode))
     trainset = trainset.repeat()
     trainset = trainset.batch(bs)
     return trainset
