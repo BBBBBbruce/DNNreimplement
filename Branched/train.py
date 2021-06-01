@@ -11,7 +11,7 @@ from datagen_split import svbrdf_gen
 num_epochs = 20
 
 opt = Adam(lr=0.00002)
-step_num = 5000
+step_num = 1000
 epoch_num = 8
 #sample = 'E:\workspace_ms_zhiyuan\Data_Deschaintre18\Train_smaller'
 train_path = '/vol/bitbucket/zz6117/Data_Deschaintre18/trainBlended'

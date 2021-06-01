@@ -10,7 +10,7 @@ num_epochs = 20
 
 
 #tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="E:\workspace_ms_zhiyuan\\tensorboard_log\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), histogram_freq=1,profile_batch=3)
-
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="/vol/bitbucket/zz6117/tb_log/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), histogram_freq=1)
 #model = SVBRDF_branched()
 model = SVBRDF_debugged(9)
 learning_rate = 0.00002
@@ -29,7 +29,7 @@ print('finish_loading')
 
 opt = Adam(lr=learning_rate)
 model.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 2, epochs=2)#,callbacks=[tensorboard_callback]) #24884 DisplayCallback()
+hitory = model.fit( ds,verbose =2 , steps_per_epoch = 2000, epochs=8,callbacks=[tensorboard_callback]) #24884 DisplayCallback()
 
 model.save('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_1')
 new_model = tf.keras.models.load_model('/vol/bitbucket/zz6117/DNNreimplement/Model_trained/Model_saved_1', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
