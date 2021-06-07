@@ -1,12 +1,15 @@
+import matplotlib.pyplot as plt
+
 import tensorflow as tf
-from svbrdf import SVBRDF
-from DataGen import svbrdf_gen
-from GGXrenderer import rendering_loss,l1_loss,normalisation
 from tensorflow.keras.optimizers import Adam 
 import numpy as np
 import datetime
-import matplotlib.pyplot as plt
 
+from fully_branch import SVBRDF_branched
+from semi_branch import SVBRDF_semi_branched
+from partial_branch import SVBRDF_partial_branched
+from DataGen import svbrdf_gen
+from loss import rendering_loss,l1_loss,normalisation,l2_loss
 
 log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log"
 
@@ -98,17 +101,21 @@ def show_predictions (dataset, model, num=1 ):
 
 print(tf.__version__)
 
-test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\single'
+test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\testBlended'
 print('load_data')
 ds = svbrdf_gen(test_path,8)
 print(ds.element_spec)
 print('finish_loading')
 
 opt = Adam(lr=0.00002)
-
-new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\\Semi_branch', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
+new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_saved_1', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
+#new_model.summary()
 new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['mse'])
+
+
+
 show_predictions(ds,new_model,1)
+
 
 
 

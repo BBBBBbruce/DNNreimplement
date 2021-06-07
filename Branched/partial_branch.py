@@ -7,6 +7,7 @@ filter_6 = [128,128,256,256,512,512 ,512,512,512, 512,512,256,256,128,128]
 filter_3 = [64,128,128,128,128,256 ,512,512,512, 256,128,128,128,128,64]
 
 def SVBRDF_partial_branched():
+    print("PARTIALLY BRANCHED")
     inputs = keras.Input(shape=(256,256) + (3,))
 
 ### just write the complete network, long code, but works. 
@@ -391,5 +392,5 @@ def SVBRDF_partial_branched():
     model = keras.Model(inputs, outputs)
     return model
 
-model = SVBRDF_partial_branched()
-model.summary()
+#model = SVBRDF_partial_branched()
+#model.summary()

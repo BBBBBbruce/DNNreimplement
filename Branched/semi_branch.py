@@ -9,6 +9,7 @@ from tensorflow.python.keras.layers.advanced_activations import LeakyReLU
 filters = [64,64,128,256,256,256,512,512,512,256,256,256,128,64,64]
 
 def SVBRDF_semi_branched():
+    print("SEMI BRANCHED")
     inputs = keras.Input(shape=(256,256) + (3,))
 
 ### just write the complete network, long code, but works. 
@@ -488,5 +489,5 @@ def SVBRDF_semi_branched():
     model = keras.Model(inputs, outputs)
     return model
 
-model = SVBRDF_semi_branched()
-model.summary()
+#model = SVBRDF_semi_branched()
+#model.summary()

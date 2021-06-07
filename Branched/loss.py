@@ -2,28 +2,30 @@
 import numpy as np
 import tensorflow as tf
 
-import time
-import random
-from datetime import datetime as dt
-import matplotlib.pyplot as plt
-#
 PI = tf.constant(np.pi,dtype = tf.float32)
 bs = 8
 
-def imagestack(path):
-    image_string = tf.io.read_file(path)
-    img = tf.image.decode_image(image_string,dtype = tf.float32)
-    shape = img.shape[0]
+viewpos  = tf.constant([143,143,288],dtype = tf.float32)
 
-    inputimg = img[:,0:shape,:] #rendered 3 channels
+def normalisation(vec):
+    return vec/tf.norm(vec,axis = -1)[:,:,None]
 
-    albedo  = img[:,shape*2:shape*3,: ]
-    specular= img[:,shape*4:shape*5,: ]
-    normal  = img[:,shape  :shape*2,:2]
-    rough   = img[:,shape*3:shape*4,0 ]
-    rough = tf.expand_dims(rough,axis=-1)
 
-    return inputimg, tf.concat([albedo,specular,normal,rough],axis = -1)
+def padd1_fragepos():
+    shapex = 256
+    shapey = 256
+    x = np.linspace(0,shapex-1,shapex)
+    y = np.linspace(0,shapey-1,shapey)
+    xx,yy = tf.meshgrid(x,y)
+    xx = tf.cast(tf.reshape(xx ,(shapex,shapey,1)),dtype = tf.float32)
+    yy = tf.cast(tf.reshape(yy ,(shapex,shapey,1)),dtype = tf.float32)
+    padd0 = tf.zeros([shapex,shapey,1],dtype = tf.float32)
+    padd1 = tf.ones ([shapex,shapey,1],dtype = tf.float32)
+    fragpos = tf.concat([xx,yy,padd0],axis = -1)
+    return fragpos, padd1
+
+fragpos,padd1 = padd1_fragepos()
+V = normalisation(viewpos - fragpos)
 
 def l1_loss(mgt, mif):
     return tf.reduce_mean(tf.abs(mgt-mif))
@@ -36,8 +38,8 @@ def rendering_loss(mgt, mif):
     for i in range(bs):
         gtruth = mgt[i]
         ifred  = mif[i] 
-        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) *0.4+ 0.6* l1_loss(gtruth,ifred)
-    return loss/bs
+        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) *0.4 + 0.6* l1_loss(gtruth,ifred)
+    return loss/bs 
 
 def normalisation(vec):
     return vec/tf.norm(vec,axis = -1)[:,:,None]
@@ -51,8 +53,6 @@ def GGXtf(maps):
         return tf.expand_dims(map,axis = -1)
 
     def GGXpxl(V,L,N,albedo,metallic,rough):
-        #print(V.shape,L.shape,N.shape,albedo.shape,rough.shape)
-        #metallic = tf.reduce_mean(metallic,axis = -1)# set to single value
         rough= rough**2
         rough = match_dim(rough+0.01)
         H = normalisation(V+L)
@@ -69,14 +69,10 @@ def GGXtf(maps):
         denominator = 4 * NdotV * NdotL +0.01
         specular = nominator / denominator
         
-        #diffuse = (1-metallic)[:,:,None] * albedo / PI *NdotL[:,:,None] 
-
         diffuse = (1-metallic) * albedo / PI *NdotL
 
         reflection = specular * NdotL*1.5 #* radiance 
-        #reflection = tf.reshape(reflection,(256,256,1))
 
-        #color = tf.concat([reflection,reflection,reflection],-1) + diffuse*1
         color = reflection + diffuse
         return color#**(1/1.8)
 
@@ -85,61 +81,13 @@ def GGXtf(maps):
 
     np.random.seed() # random takes long time
     xy = np.random.randint(288,10000, size=2)
-    #ran_seed = random.seed(dt.now())
-    #light_xy = tf.random.uniform(shape=[2], maxval=1100, dtype=tf.float32, seed=ran_seed).numpy()
     lightpos = tf.constant([xy[0],xy[1],1000],dtype = tf.float32)
-    #lightpos = tf.constant([1000,500,1000],dtype = tf.float32)
-    viewpos  = tf.constant([143,143,288],dtype = tf.float32)
+    
 
     albedomap, specularmap, normalinmap, roughnessmap = process(maps)
     
-    
-    shapex = 256
-    shapey = 256
-
-    x = np.linspace(0,shapex-1,shapex)
-    y = np.linspace(0,shapey-1,shapey)
-    xx,yy = tf.meshgrid(x,y)
-    xx = tf.cast(tf.reshape(xx ,(shapex,shapey,1)),dtype = tf.float32)
-    yy = tf.cast(tf.reshape(yy ,(shapex,shapey,1)),dtype = tf.float32)
-    padd0 = tf.reshape(tf.zeros([shapex,shapey],dtype = tf.float32)    ,(shapex,shapey,1))
-    padd1 = tf.reshape(tf.ones ([shapex,shapey],dtype = tf.float32),(shapex,shapey,1))
-    fragpos = tf.concat([xx,yy,padd0],axis = -1)
-
     N = normalisation(tf.concat([normalinmap,padd1],axis = -1))
-    V = normalisation(viewpos - fragpos)
     L = normalisation(lightpos - fragpos)
-    '''
-    rough = tf.expand_dims(roughnessmap,axis=-1)
-    title = ['view','light','albedo', 'specular', 'normal','roughness']
-    display_list=[V,L, albedomap, specularmap, N, rough]
-    for i in range(len(display_list)):
-        plt.subplot(1, len(display_list), i+1)
-        plt.title(title[i])
-        plt.imshow(tf.keras.preprocessing.image.array_to_img(display_list[i]))
-        plt.axis('off')
-    plt.show()
-    '''
 
     imgout = GGXpxl(V ,L , N, albedomap,specularmap,roughnessmap)
     return  imgout
-
-
-'''
-tf.compat.v1.enable_eager_execution()
-
-path = 'E:\workspace_ms_zhiyuan\DNNreimplement\Deschaintre\Dataset\inputExamples\example.png'
-photo, maps = imagestack(path)
-
-ran_seed = random.seed(dt.now())
-tf.random.set_seed(ran_seed) 
-maps= tf.image.random_crop(maps, [256, 256, 9])
-
-print('start rendering')
-st = time.time()
-out1 = GGXtf(maps)
-
-print('finish rendering, using '+str(time.time()-st)+' seconds')
-plt.imshow(out1)
-plt.show()
-'''
