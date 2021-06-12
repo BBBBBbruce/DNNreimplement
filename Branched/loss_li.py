@@ -33,19 +33,19 @@ def l1_loss(mgt, mif):
 def l2_loss(mgt, mif):
     return tf.reduce_mean(tf.square(mgt-mif))
 
-def rendering_loss(mgt, mif):
+def rendering_loss_li(mgt, mif):
     loss = 0
     for i in range(bs):
         gtruth = mgt[i]
         ifred  = mif[i] 
-        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) #*0.4 + 0.6* l1_loss(gtruth,ifred)
+        loss +=  l1_loss(GGXtf(gtruth),GGXtf(ifred)) *0.4 + 0.6* l1_loss(gtruth,ifred)
     return loss/bs 
 
 def normalisation(vec):
     return vec/tf.norm(vec,axis = -1)[:,:,None]
 
 def process(maps):
-    return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
+    return maps[:,:,0:3], maps[:,:,3:6],maps[:,:,6], maps[:,:,7:9]
 
 def GGXtf(maps):
     
@@ -84,7 +84,7 @@ def GGXtf(maps):
     lightpos = tf.constant([xy[0],xy[1],1000],dtype = tf.float32)
     
 
-    albedomap, specularmap, normalinmap, roughnessmap = process(maps)
+    albedomap, specularmap, roughnessmap, normalinmap = process(maps)
     
     N = normalisation(tf.concat([normalinmap,padd1],axis = -1))
     L = normalisation(lightpos - fragpos)

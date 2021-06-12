@@ -8,8 +8,11 @@ from fully_branch import SVBRDF_branched
 from semi_branch import SVBRDF_semi_branched
 from partial_branch import SVBRDF_partial_branched
 from DataGen import svbrdf_gen
-from loss import rendering_loss,l1_loss,normalisation,l2_loss
+#from loss import rendering_loss,l1_loss,normalisation,l2_loss
 
+from semi_branch_li import SVBRDF_semi_branched_li
+from loss_li import rendering_loss_li
+from loss_fixed import rendering_loss
 
 
 log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
