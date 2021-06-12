@@ -45,7 +45,7 @@ def normalisation(vec):
     return vec/tf.norm(vec,axis = -1)[:,:,None]
 
 def process(maps):
-    return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
+    return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6], maps[:,:,7:] 
 
 def GGXtf(maps):
     
@@ -84,7 +84,7 @@ def GGXtf(maps):
     lightpos = tf.constant([xy[0],xy[1],1000],dtype = tf.float32)
     
 
-    albedomap, specularmap, normalinmap, roughnessmap = process(maps)
+    albedomap, specularmap, roughnessmap, normalinmap  = process(maps)
     
     N = normalisation(tf.concat([normalinmap,padd1],axis = -1))
     L = normalisation(lightpos - fragpos)
