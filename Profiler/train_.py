@@ -16,14 +16,14 @@ log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + datetime.datetime.now()
 def display_tbs(svbrdf,epoch):
     svbrdf = (svbrdf+1)/2
     def process(maps):
-        return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
+        return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6], maps[:,:,7:] 
 
-    albedo, specular, normal, rough = process(svbrdf)
+    albedo, specular, rough, normal = process(svbrdf)
     rough = tf.expand_dims(rough,axis=-1)
     padd1 = tf.ones ([256,256,1],dtype = tf.float32)
     N = tf.concat([normal,padd1],axis = -1)
     rough = tf.image.grayscale_to_rgb(rough)
-    title = ['albedo', 'specular', 'normal','roughness']
+    title = ['albedo', 'specular', 'roughness','normal']
     display_list=[ albedo, specular**(1/2.2), N, rough]
     file_writer = tf.summary.create_file_writer(log_dir)
     with file_writer.as_default():
@@ -32,7 +32,7 @@ def display_tbs(svbrdf,epoch):
         tf.summary.image("svbrdf", images,max_outputs=5,step=epoch)
 
 def show_predictions ( epoch, num=1 ):
-    for photo, svbrdf in sample_ds.take(num):
+    for photo, _ in sample_ds.take(num):
 
         pred_svbrdf= model.predict(photo)
         #display(photo[0],svbrdf[0])
