@@ -74,7 +74,7 @@ def GGX_(maps,V,L,H,VdotH):
     diffuse = (1-metallic) * albedo / PI *NdotL
     reflection = specular * NdotL*1.5 #* radiance 
     color = reflection + diffuse
-    return color#**(1/1.8)
+    return color**(1/1.8)
     
 def render_loss(mgt, mif):
     return l1_loss(GGX_(mgt,V8,L8,H8,VdotH8 ),GGX_(mif,V8,L8,H8,VdotH8 ))

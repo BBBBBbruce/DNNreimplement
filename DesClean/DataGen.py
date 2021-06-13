@@ -22,7 +22,7 @@ def imagestack_img(img):
     rough   = img[:,shape*3:shape*4,0 ]
     rough = tf.expand_dims(rough,axis=-1)
 
-    return logrithm(inputimg), tf.concat([albedo,specular,normal,rough],axis = -1)
+    return inputimg, tf.concat([albedo,specular,normal,rough],axis = -1)
     
 
 def img_process(raw):
@@ -43,7 +43,8 @@ def parse_func(path):
     ins, outs = tf.py_function(func = img_process, inp = [raw_input],Tout =(tf.float32,tf.float32) )
     ins.set_shape((256,256,3))
     outs.set_shape((256,256,9))
-    return ins*2-1,outs*2-1
+    return ins,outs
+    #return ins*2-1,outs*2-1
 
 def svbrdf_gen(path, bs):
     dataset = tf.data.Dataset.list_files(path+'\*.png')

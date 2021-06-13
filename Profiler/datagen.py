@@ -21,6 +21,7 @@ def imagestack_img(img):
     rough = tf.expand_dims(rough,axis=-1)
 
     return tf.concat([logrithm(inputimg), albedo,specular,rough, normal],axis = -1)
+    #return tf.concat([logrithm(inputimg), albedo,specular,normal, rough],axis = -1)
 
 
 def img_process(raw):

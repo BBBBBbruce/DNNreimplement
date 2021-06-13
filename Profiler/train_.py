@@ -6,7 +6,8 @@ import datetime
 from net import SVBRDF_debugged
 from datagen import svbrdf_gen
 #from loss import rendering_loss,l1_loss,normalisation,l2_loss
-from loss_fixed_opt import render_loss
+#from loss_fixed_opt import render_loss
+from loss_fixed import rendering_loss_linear
 
 
 
@@ -61,8 +62,8 @@ test_ds = svbrdf_gen(test_path,8)
 print('finish_loading')
 
 opt = Adam(lr=learning_rate)
-model.compile(optimizer = opt, loss = render_loss, metrics = ['accuracy'])
-hitory = model.fit( ds,verbose =1 , steps_per_epoch = 2000, epochs=8,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback(),tensorboard_callback,DisplayCallback(),
+model.compile(optimizer = opt, loss = rendering_loss_linear, metrics = ['accuracy'])
+hitory = model.fit( ds,verbose =1 , steps_per_epoch = 10000, epochs=4,callbacks=[tensorboard_callback,DisplayCallback()]) #24884 DisplayCallback(),tensorboard_callback,DisplayCallback(),
 
 loss, acc = model.evaluate(test_ds, verbose=2,steps=10)
 print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))

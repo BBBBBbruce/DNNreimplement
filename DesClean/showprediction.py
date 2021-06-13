@@ -50,7 +50,7 @@ def display_predicted(photo,svbrdf):
     rough = tf.image.grayscale_to_rgb(rough)
 
     title = ['albedo', 'specular', 'normal','roughness']
-    display_list=[ albedo, specular**(1/1.8), N, rough]
+    display_list=[ albedo, specular, N, rough]
 
     log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + "predicted"
     file_writer = tf.summary.create_file_writer(log_dir)
@@ -106,7 +106,7 @@ print('finish_loading')
 
 opt = Adam(lr=0.00002)
 
-new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\\Semi_branch', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
+new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_sigmoid', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
 new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['mse'])
 show_predictions(ds,new_model,1)
 
