@@ -3,12 +3,14 @@ from tensorflow.keras.optimizers import Adam
 import numpy as np
 import datetime
 import matplotlib.pyplot as plt
-import tensorflow as tf
-from datetime import datetime
-import random
-
+from net import SVBRDF_debugged
+from datagen import svbrdf_gen
 from loss_fixed import rendering_loss_linear
-#
+
+
+
+def gamma_inverse(y):
+    return (np.exp(y*np.log(101.))-1.)/100.
 
 NN_size = 256
 batch_size = 8
@@ -28,7 +30,8 @@ def parse_func(path):
     return photos
 
 def photos_loader(path, bs):
-    dataset = tf.data.Dataset.list_files(path+'/*.jpg')
+    dataset = tf.data.Dataset.list_files(path+'/mattress.jpg')
+    dataset = dataset.shuffle(8, reshuffle_each_iteration=True)
     trainset = dataset.map(parse_func)
     trainset = trainset.repeat()
     trainset = trainset.batch(bs)
@@ -39,9 +42,9 @@ def display_predicted(photo,svbrdf):
     photo = (photo+1)/2
     svbrdf = (svbrdf+1)/2
     def process(maps):
-        return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6:8], maps[:,:,8] 
+        return maps[:,:,0:3], maps[:,:,3:6], maps[:,:,6], maps[:,:,7:] 
 
-    albedo, specular, normal, rough = process(svbrdf)
+    albedo, specular, rough, normal = process(svbrdf)
 
     rough = tf.expand_dims(rough,axis=-1)
 
@@ -51,10 +54,10 @@ def display_predicted(photo,svbrdf):
 
     rough = tf.image.grayscale_to_rgb(rough)
 
-    title = ['albedo', 'specular', 'normal','roughness']
-    display_list=[ albedo, specular, N, rough]
+    title = ['photo','albedo', 'specular', 'normal','roughness']
+    display_list=[ gamma_inverse(photo), albedo, specular, N, rough]
 
-    log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + "predicted"
+    log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log\\" + "predicted_real"
     file_writer = tf.summary.create_file_writer(log_dir)
 
     with file_writer.as_default():
@@ -64,25 +67,20 @@ def display_predicted(photo,svbrdf):
 
 def show_predictions (dataset, model, num=1 ):
     for photo in dataset.take(num):
+        i = 1
         pred_svbrdf= model.predict(photo)
-        display_predicted(photo[0],pred_svbrdf[0])
+        display_predicted(photo[i],pred_svbrdf[i])
 
 
-test_path =  'D:\Y4\DNNreimplement\Processed'
+test_path =  'E:\workspace_ms_zhiyuan\DNNreimplement\Processed'
 print('load_data')
 ds = photos_loader(test_path,8)
 print(ds.element_spec)
 print('finish_loading')
 opt = Adam(lr=0.00002)
-#new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_sigmoid', custom_objects = {'rendering_loss' : rendering_loss_linear},compile=False )
-#new_model.compile(optimizer = opt, loss = rendering_loss_linear, metrics = ['mse'])
-
-for photos in ds.take(1):
-    for i in range(8):
-        plt.imshow(photos[i])
-        plt.show()
-
-#show_predictions(ds,new_model,1)
+new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_saved_rl', custom_objects = {'rendering_loss' : rendering_loss_linear},compile=False )
+new_model.compile(optimizer = opt, loss = rendering_loss_linear, metrics = ['mse'])
+show_predictions(ds,new_model,1)
 
 
 
