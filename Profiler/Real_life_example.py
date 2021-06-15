@@ -1,14 +1,13 @@
 import tensorflow as tf
-from GGXrenderer import rendering_loss,l1_loss,normalisation
 from tensorflow.keras.optimizers import Adam 
 import numpy as np
 import datetime
 import matplotlib.pyplot as plt
-
-
 import tensorflow as tf
 from datetime import datetime
 import random
+
+from loss_fixed import rendering_loss_linear
 #
 
 NN_size = 256
@@ -18,24 +17,23 @@ def logrithm(img):
     return tf.math.log(100.*img + 1.)/tf.math.log(101.)  
 
 def img_process(raw):
-    img_stack = logrithm(inputimg)
+    img_stack = logrithm(raw)
     return img_stack*2-1
 
 def parse_func(path):
     image_string = tf.io.read_file(path)
     raw_input = tf.image.decode_image(image_string,dtype = tf.float32)
-    photos = tf.py_function(func = img_process, inp = [raw_input],Tout =(tf.float32,tf.float32) )
-    ins.set_shape((256,256,3))
-    return ins
+    photos = tf.py_function(func = img_process, inp = [raw_input],Tout =(tf.float32) )
+    photos.set_shape((256,256,3))
+    return photos
 
 def photos_loader(path, bs):
-    dataset = tf.data.Dataset.list_files(path+'/*.png')
+    dataset = tf.data.Dataset.list_files(path+'/*.jpg')
     trainset = dataset.map(parse_func)
     trainset = trainset.repeat()
     trainset = trainset.batch(bs)
     return trainset
 
-log_dir = "E:\workspace_ms_zhiyuan\\tensorboard_log"
 
 def display_predicted(photo,svbrdf):
     photo = (photo+1)/2
@@ -70,16 +68,21 @@ def show_predictions (dataset, model, num=1 ):
         display_predicted(photo[0],pred_svbrdf[0])
 
 
-test_path =  'E:\workspace_ms_zhiyuan\Data_Deschaintre18\\single'
+test_path =  'D:\Y4\DNNreimplement\Processed'
 print('load_data')
-ds = svbrdf_gen(test_path,8)
+ds = photos_loader(test_path,8)
 print(ds.element_spec)
 print('finish_loading')
 opt = Adam(lr=0.00002)
-new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_sigmoid', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
-new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['mse'])
+#new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_sigmoid', custom_objects = {'rendering_loss' : rendering_loss_linear},compile=False )
+#new_model.compile(optimizer = opt, loss = rendering_loss_linear, metrics = ['mse'])
 
-show_predictions(ds,new_model,1)
+for photos in ds.take(1):
+    for i in range(8):
+        plt.imshow(photos[i])
+        plt.show()
+
+#show_predictions(ds,new_model,1)
 
 
 
