@@ -14,9 +14,9 @@ print('finish_loading')
 
 
 opt = Adam(lr=0.00002)
-new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_fully_11200', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
+new_model = tf.keras.models.load_model('E:\workspace_ms_zhiyuan\DNNreimplement\Model_trained\Model_trained\Model_fully_functional', custom_objects = {'rendering_loss' : rendering_loss},compile=False )
 #new_model.summary()
-new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['mse'])
+new_model.compile(optimizer = opt, loss = rendering_loss, metrics = ['accuracy'])
 loss, acc = new_model.evaluate(ds, verbose=2,steps=10)
 
 print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
